@@ -149,7 +149,8 @@
                                 </td>
                                 <td><input type="text" id="quantity" name="quantity"
                                         placeholder="VD: số lượng + loại hàng" form="productForm"></td>
-                                <td><input type="text" id="totalAmount" name="totalAmount" placeholder="" required form="productForm"></td>
+                                <td><input type="number" id="totalAmount" name="totalAmount" placeholder="" required
+                                        min="0" form="productForm"></td>
                                 <td>-</td>
                                 <td>-</td>
                                 <td>-</td>
@@ -217,58 +218,7 @@
     </footer>
 
     <script type="module" src="js/auth.js?v=4.5"></script>
-    <script type="module" src="js/script.js?v=5.2"></script>
-
-    <!-- Tự động tính toán tiền khi nhập biểu thức -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const totalAmountInput = document.getElementById('totalAmount');
-            if (!totalAmountInput) return;
-
-            // Tính toán biểu thức (VD: 50000+20000 = 70000)
-            function calculateExpression(expr) {
-                try {
-                    if (!/^[\d\s\+\-]+$/.test(expr)) return null;
-                    expr = expr.replace(/\s/g, '');
-                    if (!expr) return null;
-
-                    const tokens = expr.match(/[+\-]?\d+/g);
-                    if (!tokens) return null;
-
-                    let total = 0;
-                    for (let token of tokens) {
-                        total += parseInt(token);
-                    }
-                    return total >= 0 ? total : 0;
-                } catch (e) {
-                    return null;
-                }
-            }
-
-            // Khi blur hoặc Enter, tính tổng
-            totalAmountInput.addEventListener('blur', function(e) {
-                let value = e.target.value;
-                if (value.includes('+') || value.includes('-')) {
-                    const result = calculateExpression(value);
-                    if (result !== null) {
-                        e.target.value = result;
-                    }
-                }
-            });
-
-            totalAmountInput.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter') {
-                    let value = e.target.value;
-                    if (value.includes('+') || value.includes('-')) {
-                        const result = calculateExpression(value);
-                        if (result !== null) {
-                            e.target.value = result;
-                        }
-                    }
-                }
-            });
-        });
-    </script>
+    <script type="module" src="js/script.js?v=5.1"></script>
 </body>
 
 </html>
