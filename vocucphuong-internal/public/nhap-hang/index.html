@@ -149,8 +149,18 @@
                                 </td>
                                 <td><input type="text" id="quantity" name="quantity"
                                         placeholder="VD: số lượng + loại hàng" form="productForm"></td>
-                                <td><input type="number" id="totalAmount" name="totalAmount" placeholder="" required
-                                        min="0" form="productForm"></td>
+                                <td class="amount-cell">
+                                    <div class="amount-input-wrapper">
+                                        <input type="number" id="totalAmount" name="totalAmount" placeholder="0" required min="0" form="productForm">
+                                        <div class="amount-buttons">
+                                            <button type="button" class="amt-btn" onclick="addAmount(10000)">+10k</button>
+                                            <button type="button" class="amt-btn" onclick="addAmount(20000)">+20k</button>
+                                            <button type="button" class="amt-btn" onclick="addAmount(50000)">+50k</button>
+                                            <button type="button" class="amt-btn" onclick="addAmount(100000)">+100k</button>
+                                            <button type="button" class="amt-btn amt-clear" onclick="clearAmount()">Xóa</button>
+                                        </div>
+                                    </div>
+                                </td>
                                 <td>-</td>
                                 <td>-</td>
                                 <td>-</td>
@@ -218,7 +228,151 @@
     </footer>
 
     <script type="module" src="js/auth.js?v=4.5"></script>
-    <script type="module" src="js/script.js?v=5.1"></script>
+    <script type="module" src="js/script.js?v=5.2"></script>
+
+    <!-- Amount buttons styles and script -->
+    <style>
+        .amount-cell {
+            min-width: 180px !important;
+        }
+        .amount-input-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .amount-input-wrapper input {
+            width: 100%;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .amount-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 3px;
+        }
+        .amt-btn {
+            padding: 3px 6px;
+            font-size: 11px;
+            font-weight: 600;
+            border: 1px solid #2563eb;
+            background: #eff6ff;
+            color: #2563eb;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .amt-btn:hover {
+            background: #2563eb;
+            color: #fff;
+        }
+        .amt-btn:active {
+            transform: scale(0.95);
+        }
+        .amt-clear {
+            border-color: #ef4444;
+            background: #fef2f2;
+            color: #ef4444;
+        }
+        .amt-clear:hover {
+            background: #ef4444;
+            color: #fff;
+        }
+    </style>
+    <script>
+        // Hàm cộng tiền vào ô tổng (nút bấm nhanh)
+        function addAmount(amount) {
+            const input = document.getElementById('totalAmount');
+            const currentValue = parseInt(input.value) || 0;
+            input.value = currentValue + amount;
+            input.focus();
+        }
+
+        // Hàm xóa tiền
+        function clearAmount() {
+            const input = document.getElementById('totalAmount');
+            input.value = '';
+            input.focus();
+        }
+
+        // ===== TỰ ĐỘNG TÍNH TOÁN KHI NHẬP BIỂU THỨC =====
+        // VD: Nhập "50000+20000" → tự động tính ra 70000
+        // VD: Nhập "100000-30000" → tự động tính ra 70000
+        document.addEventListener('DOMContentLoaded', function() {
+            const totalAmountInput = document.getElementById('totalAmount');
+            if (!totalAmountInput) return;
+
+            // Đổi type sang text để cho phép nhập dấu + và -
+            totalAmountInput.type = 'text';
+            totalAmountInput.inputMode = 'numeric';
+            totalAmountInput.placeholder = 'VD: 50000+20000';
+
+            // Tính toán biểu thức
+            function calculateExpression(expr) {
+                try {
+                    // Chỉ cho phép số, +, -, khoảng trắng
+                    if (!/^[\d\s\+\-]+$/.test(expr)) return null;
+
+                    // Thay thế khoảng trắng và tính
+                    expr = expr.replace(/\s/g, '');
+                    if (!expr) return null;
+
+                    // Tách theo + và - nhưng giữ dấu
+                    const tokens = expr.match(/[+\-]?\d+/g);
+                    if (!tokens) return null;
+
+                    let total = 0;
+                    for (let token of tokens) {
+                        total += parseInt(token);
+                    }
+
+                    return total >= 0 ? total : 0;
+                } catch (e) {
+                    return null;
+                }
+            }
+
+            // Hiển thị preview khi đang nhập
+            totalAmountInput.addEventListener('input', function(e) {
+                let value = e.target.value;
+
+                if (value.includes('+') || value.includes('-')) {
+                    const result = calculateExpression(value);
+                    if (result !== null) {
+                        e.target.title = `= ${result.toLocaleString('vi-VN')} VND (nhấn Enter hoặc Tab để áp dụng)`;
+                    }
+                } else {
+                    e.target.title = '';
+                }
+            });
+
+            // Khi blur (rời khỏi ô input), tính tổng và thay thế
+            totalAmountInput.addEventListener('blur', function(e) {
+                let value = e.target.value;
+
+                if (value.includes('+') || value.includes('-')) {
+                    const result = calculateExpression(value);
+                    if (result !== null) {
+                        e.target.value = result;
+                    }
+                }
+                e.target.title = '';
+            });
+
+            // Khi nhấn Enter, cũng tính tổng
+            totalAmountInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    let value = e.target.value;
+
+                    if (value.includes('+') || value.includes('-')) {
+                        const result = calculateExpression(value);
+                        if (result !== null) {
+                            e.target.value = result;
+                        }
+                    }
+                }
+            });
+        });
+    </script>
 </body>
 
 </html>
