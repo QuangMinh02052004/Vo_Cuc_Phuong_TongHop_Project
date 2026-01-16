@@ -52,6 +52,52 @@ export async function POST(request) {
   }
 }
 
+// PUT - Chuẩn hóa route names
+export async function PUT(request) {
+  try {
+    // Chuẩn hóa route names - thêm dấu cách sau gạch ngang
+    // "Sài Gòn- Long Khánh" -> "Sài Gòn - Long Khánh"
+    // "Long Khánh- Sài Gòn" -> "Long Khánh - Sài Gòn"
+
+    const result1 = await queryTongHop(`
+      UPDATE "TH_TimeSlots"
+      SET route = 'Sài Gòn - Long Khánh'
+      WHERE route = 'Sài Gòn- Long Khánh'
+    `);
+
+    const result2 = await queryTongHop(`
+      UPDATE "TH_TimeSlots"
+      SET route = 'Long Khánh - Sài Gòn'
+      WHERE route = 'Long Khánh- Sài Gòn'
+    `);
+
+    // Cũng chuẩn hóa bookings
+    await queryTongHop(`
+      UPDATE "TH_Bookings"
+      SET route = 'Sài Gòn - Long Khánh'
+      WHERE route = 'Sài Gòn- Long Khánh'
+    `);
+
+    await queryTongHop(`
+      UPDATE "TH_Bookings"
+      SET route = 'Long Khánh - Sài Gòn'
+      WHERE route = 'Long Khánh- Sài Gòn'
+    `);
+
+    return NextResponse.json({
+      success: true,
+      message: 'Đã chuẩn hóa route names'
+    });
+
+  } catch (error) {
+    console.error('[Normalize] Error:', error);
+    return NextResponse.json({
+      success: false,
+      error: error.message
+    }, { status: 500 });
+  }
+}
+
 // GET - Xem thống kê theo ngày
 export async function GET(request) {
   try {

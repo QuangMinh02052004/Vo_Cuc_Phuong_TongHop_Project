@@ -1,6 +1,33 @@
 import { query, queryOne } from '../../../../lib/database';
 import { NextResponse } from 'next/server';
 
+// Helper function để ghi log thay đổi
+async function logProductChange(productId, action, field, oldValue, newValue, changedBy, ipAddress) {
+  try {
+    await query(`
+      INSERT INTO "ProductLogs" ("productId", action, field, "oldValue", "newValue", "changedBy", "ipAddress")
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+    `, [
+      productId,
+      action,
+      field || null,
+      oldValue !== undefined && oldValue !== null ? String(oldValue) : null,
+      newValue !== undefined && newValue !== null ? String(newValue) : null,
+      changedBy,
+      ipAddress || null
+    ]);
+  } catch (error) {
+    console.error('Error logging product change:', error.message);
+  }
+}
+
+// Lấy IP từ request
+function getClientIP(request) {
+  return request.headers.get('x-forwarded-for')?.split(',')[0] ||
+         request.headers.get('x-real-ip') ||
+         null;
+}
+
 // GET /api/nhap-hang/products
 export async function GET(request) {
   try {
@@ -64,7 +91,8 @@ export async function POST(request) {
       insurance,
       totalAmount,
       paymentStatus,
-      notes
+      notes,
+      createdBy
     } = body;
 
     if (!receiverName || !receiverPhone || !station || !productType) {
@@ -97,9 +125,9 @@ export async function POST(request) {
         id, "senderName", "senderPhone", "senderStation",
         "receiverName", "receiverPhone", station,
         "productType", quantity, vehicle, insurance, "totalAmount",
-        "paymentStatus", "sendDate", status, notes
+        "paymentStatus", "sendDate", status, notes, "createdBy"
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), 'pending', $14
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), 'pending', $14, $15
       )
       RETURNING *
     `, [
@@ -116,19 +144,34 @@ export async function POST(request) {
       insurance || 0,
       totalAmount || 0,
       paymentStatus || 'unpaid',
-      notes || null
+      notes || null,
+      createdBy || 'system'
     ]);
 
     const createdProduct = result[0];
 
-    // ===========================================
+    // Ghi log tạo mới
+    const clientIP = getClientIP(request);
+    const productInfo = {
+      receiverName,
+      receiverPhone,
+      totalAmount: totalAmount || 0
+    };
+    await logProductChange(
+      productId,
+      'create',
+      'product_info',
+      null,
+      JSON.stringify(productInfo),
+      createdBy || 'system',
+      clientIP
+    );
+
     // AUTO-SYNC: Nếu là đơn "DỌC ĐƯỜNG", tự động tạo booking trong TongHop
-    // ===========================================
     if (station && station.includes('DỌC ĐƯỜNG')) {
       try {
         console.log('[NhapHang] Đơn dọc đường detected, syncing to TongHop...');
 
-        // Gọi internal webhook (cùng server)
         const baseUrl = process.env.VERCEL_URL
           ? `https://${process.env.VERCEL_URL}`
           : 'http://localhost:3000';
@@ -152,13 +195,12 @@ export async function POST(request) {
         const webhookResult = await webhookResponse.json();
 
         if (webhookResult.success) {
-          console.log('[NhapHang] ✅ Đã sync booking sang TongHop:', webhookResult.data);
+          console.log('[NhapHang] Đã sync booking sang TongHop:', webhookResult.data);
         } else {
-          console.error('[NhapHang] ❌ Lỗi sync TongHop:', webhookResult.error);
+          console.error('[NhapHang] Lỗi sync TongHop:', webhookResult.error);
         }
       } catch (syncError) {
-        // Không throw error - vẫn trả về thành công cho đơn hàng
-        console.error('[NhapHang] ⚠️ Lỗi kết nối TongHop:', syncError.message);
+        console.error('[NhapHang] Lỗi kết nối TongHop:', syncError.message);
       }
     }
 

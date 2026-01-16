@@ -12,13 +12,14 @@ export async function GET() {
 
 export async function POST(request) {
   try {
-    const { name, phone, license } = await request.json();
+    const { name, phone } = await request.json();
     const result = await queryTongHop(
-      'INSERT INTO "TH_Drivers" (name, phone, license) VALUES ($1, $2, $3) RETURNING *',
-      [name, phone || '', license || '']
+      'INSERT INTO "TH_Drivers" (name, phone) VALUES ($1, $2) RETURNING *',
+      [name, phone || '']
     );
     return NextResponse.json(result[0], { status: 201 });
   } catch (error) {
+    console.error('Error creating driver:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

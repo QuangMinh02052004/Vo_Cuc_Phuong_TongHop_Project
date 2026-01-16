@@ -1,9 +1,32 @@
 import { queryTongHop } from '../../../../lib/database';
 import { NextResponse } from 'next/server';
 
-export async function GET() {
+export async function GET(request) {
   try {
-    const bookings = await queryTongHop('SELECT * FROM "TH_Bookings" ORDER BY id DESC');
+    const { searchParams } = new URL(request.url);
+    const date = searchParams.get('date');
+    const route = searchParams.get('route');
+
+    let sqlQuery = 'SELECT * FROM "TH_Bookings" WHERE 1=1';
+    const params = [];
+    let paramIndex = 1;
+
+    if (date) {
+      sqlQuery += ` AND date = $${paramIndex}`;
+      params.push(date);
+      paramIndex++;
+    }
+
+    if (route) {
+      sqlQuery += ` AND route = $${paramIndex}`;
+      params.push(route);
+      paramIndex++;
+    }
+
+    // Giới hạn 500 kết quả gần nhất
+    sqlQuery += ' ORDER BY "createdAt" DESC LIMIT 500';
+
+    const bookings = await queryTongHop(sqlQuery, params);
     return NextResponse.json(bookings);
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

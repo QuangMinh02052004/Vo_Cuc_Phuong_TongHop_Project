@@ -444,7 +444,8 @@ function printReceipt(productData) {
     const stationName = productData.station ? productData.station.split(' - ')[1] || productData.station : '';
 
     // Xác định trạng thái thanh toán
-    const paymentStatusText = productData.totalAmount >= 10000 ? '(Đã thanh toán)' : '(Chưa thanh toán)';
+    const printAmount = parseInt(productData.totalAmount) || 0;
+    const paymentStatusText = printAmount >= 10000 ? '(Đã thanh toán)' : '(Chưa thanh toán)';
 
     // Tạo div chứa nội dung in
     const printDiv = document.createElement('div');
@@ -478,7 +479,7 @@ function printReceipt(productData) {
             </div>
 
             <div class="info-line">
-                <span class="label">Thanh toán:</span> ${formatCurrency(productData.totalAmount)}đ ${paymentStatusText}
+                <span class="label">Thanh toán:</span> ${formatCurrency(printAmount)}đ ${paymentStatusText}
             </div>
 
             <div class="info-line">
@@ -757,10 +758,11 @@ function renderTable() {
     } else {
         dataRowsHTML = filteredProducts.map((product, index) => {
             const formattedDate = formatDateTime(product.sendDate || new Date().toISOString());
-            const formattedAmount = formatCurrency(product.totalAmount || 0);
+            const productAmount = parseInt(product.totalAmount) || 0;
+            const formattedAmount = formatCurrency(productAmount);
 
             // Xác định trạng thái thanh toán (nếu chưa có trong data)
-            const paymentStatus = product.paymentStatus || ((product.totalAmount || 0) >= 10000 ? 'paid' : 'unpaid');
+            const paymentStatus = product.paymentStatus || (productAmount >= 10000 ? 'paid' : 'unpaid');
             const paymentStatusText = paymentStatus === 'paid' ?
                 '<span class="status-paid">Đã thanh toán</span>' :
                 '<span class="status-unpaid">Chưa thanh toán</span>';
@@ -832,20 +834,22 @@ function updateStatistics(filteredProducts = null) {
     const totalShipments = filteredProducts.length;
 
     const paidProducts = filteredProducts.filter(p => {
-        const status = p.paymentStatus || (p.totalAmount >= 10000 ? 'paid' : 'unpaid');
+        const amount = parseInt(p.totalAmount) || 0;
+        const status = p.paymentStatus || (amount >= 10000 ? 'paid' : 'unpaid');
         return status === 'paid';
     });
 
     const unpaidProducts = filteredProducts.filter(p => {
-        const status = p.paymentStatus || (p.totalAmount >= 10000 ? 'paid' : 'unpaid');
+        const amount = parseInt(p.totalAmount) || 0;
+        const status = p.paymentStatus || (amount >= 10000 ? 'paid' : 'unpaid');
         return status === 'unpaid';
     });
 
     const totalPaidCustomers = paidProducts.length;
     const totalUnpaidCustomers = unpaidProducts.length;
 
-    const totalPaidAmount = paidProducts.reduce((sum, p) => sum + (p.totalAmount || 0), 0);
-    const totalUnpaidAmount = unpaidProducts.reduce((sum, p) => sum + (p.totalAmount || 0), 0);
+    const totalPaidAmount = paidProducts.reduce((sum, p) => sum + (parseInt(p.totalAmount) || 0), 0);
+    const totalUnpaidAmount = unpaidProducts.reduce((sum, p) => sum + (parseInt(p.totalAmount) || 0), 0);
     const totalAmount = totalPaidAmount + totalUnpaidAmount;
 
     // Cập nhật UI - Thiết kế đơn giản, gọn gàng

@@ -1,8 +1,7 @@
 // Logs Module - Xem lịch sử chỉnh sửa đơn hàng
 
-// API Configuration
-const IP_ADDRESS = 'localhost';
-const API_BASE_URL = `http://${IP_ADDRESS}:5001/api`;
+// API Configuration - Use Vercel API
+const API_BASE_URL = '/api/nhap-hang';
 
 // Helper function để lấy token
 function getAuthToken() {
