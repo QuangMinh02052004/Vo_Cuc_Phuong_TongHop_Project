@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lịch sử chỉnh sửa - CTY DV XE DU LỊCH VÕ CÚC PHƯƠNG</title>
+    <link rel="icon" type="image/png" href="images/logo.png">
+    <link rel="stylesheet" href="css/styles.css?v=5.0">
+    <style>
+        .logs-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            min-width: 1400px;
+        }
+
+        .logs-table th,
+        .logs-table td {
+            padding: 8px 6px;
+            border: 1px solid #e5e7eb;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        .logs-table th {
+            background: #f3f4f6;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            white-space: nowrap;
+        }
+
+        .logs-table tr:hover {
+            background: #f9fafb;
+        }
+
+        .logs-table td small {
+            color: #6b7280;
+            font-size: 11px;
+        }
+
+        .logs-table td div {
+            margin-bottom: 2px;
+            font-size: 11px;
+        }
+
+        .logs-table td div b {
+            color: #4b5563;
+        }
+
+        .action-badge {
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .action-create {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .action-update {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .action-delete {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .field-name {
+            font-family: monospace;
+            background: #f3f4f6;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+
+        .value-old {
+            color: #dc2626;
+            text-decoration: line-through;
+        }
+
+        .value-new {
+            color: #16a34a;
+            font-weight: 500;
+        }
+
+        .filter-section {
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .filter-row {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .filter-group label {
+            font-size: 12px;
+            color: #6b7280;
+            font-weight: 500;
+        }
+
+        .filter-group input,
+        .filter-group select {
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+
+        .logs-container {
+            background: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        .logs-summary {
+            padding: 15px;
+            background: #f0f9ff;
+            border-bottom: 1px solid #e0f2fe;
+            font-size: 14px;
+            color: #0369a1;
+        }
+
+        .ip-address {
+            font-family: monospace;
+            font-size: 11px;
+            color: #6b7280;
+        }
+
+        .time-cell {
+            white-space: nowrap;
+            font-size: 12px;
+        }
+
+        .product-link {
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .product-link:hover {
+            text-decoration: underline;
+        }
+
+        .no-logs {
+            text-align: center;
+            padding: 40px;
+            color: #9ca3af;
+        }
+
+        .admin-warning {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            color: #92400e;
+            display: none;
+        }
+    </style>
+    <style>.nav-switch-btn{position:fixed;bottom:20px;right:20px;z-index:9999;background:#fff;color:#2563eb;padding:10px 18px;border-radius:8px;border:2px solid #2563eb;text-decoration:none;font-weight:600;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,0.1)}.nav-switch-btn:hover{background:#2563eb;color:#fff}</style>
+</head>
+
+<body>
+    <a href="/tong-hop/index.html" class="nav-switch-btn">Tổng Hợp</a>
+    <header class="header">
+        <div class="container">
+            <div class="header-top">
+                <div class="logo-container">
+                    <img src="images/logo.png" alt="Logo" class="logo-image">
+                    <h1 class="logo">CTY DV XE DU LỊCH VÕ CÚC PHƯƠNG</h1>
+                </div>
+                <div class="user-info">
+                    <span id="currentUser">User</span>
+                    <span class="separator">|</span>
+                    <a href="#" class="link" onclick="logout()">Thoát</a>
+                </div>
+            </div>
+            <nav class="navbar">
+                <div class="nav-left">
+                    <a href="index.html" class="nav-item">Nhận hàng</a>
+                    <a href="warehouse.html" class="nav-item">Kho hàng</a>
+                    <a href="statistics.html" class="nav-item">Thống kê</a>
+                    <a href="logs.html" class="nav-item active">Lịch sử</a>
+                </div>
+                <div class="nav-right">
+                    <span class="station-badge">Trạm: <strong class="station-name"
+                            id="currentStationName"></strong></span>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="container">
+            <div class="admin-warning" id="adminWarning">
+                Chỉ quản trị viên mới có thể xem trang này.
+            </div>
+
+            <section class="management-section">
+                <h2 class="section-title">Lịch sử chỉnh sửa đơn hàng</h2>
+
+                <!-- Filter Section -->
+                <div class="filter-section">
+                    <form id="filterForm">
+                        <!-- Dòng 1: Tìm kiếm chính -->
+                        <div class="filter-row" style="margin-bottom: 12px;">
+                            <div class="filter-group" style="flex: 2;">
+                                <label>Tìm kiếm</label>
+                                <input type="text" id="filterSearch" placeholder="Mã đơn, tên hoặc điện thoại...">
+                            </div>
+                            <div class="filter-group">
+                                <label>Trạm gửi</label>
+                                <select id="filterSenderStation">
+                                    <option value="">-- Tất cả --</option>
+                                    <!-- Options loaded dynamically -->
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label>Trạm nhận</label>
+                                <select id="filterStation">
+                                    <option value="">-- Tất cả --</option>
+                                    <!-- Options loaded dynamically -->
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label>Hành động</label>
+                                <select id="filterAction">
+                                    <option value="">Tất cả</option>
+                                    <option value="create">Tạo mới</option>
+                                    <option value="update">Cập nhật</option>
+                                    <option value="delete">Xóa</option>
+                                </select>
+                            </div>
+                        </div>
+                        <!-- Dòng 2: Bộ lọc thời gian và nâng cao -->
+                        <div class="filter-row">
+                            <div class="filter-group">
+                                <label>Từ ngày</label>
+                                <input type="date" id="filterDateFrom">
+                            </div>
+                            <div class="filter-group">
+                                <label>Đến ngày</label>
+                                <input type="date" id="filterDateTo">
+                            </div>
+                            <div class="filter-group">
+                                <label>Người thực hiện</label>
+                                <input type="text" id="filterChangedBy" placeholder="Nhập tên...">
+                            </div>
+                            <div class="filter-group">
+                                <label>Số lượng</label>
+                                <select id="filterLimit">
+                                    <option value="50">50 dòng</option>
+                                    <option value="100">100 dòng</option>
+                                    <option value="200" selected>200 dòng</option>
+                                    <option value="500">500 dòng</option>
+                                    <option value="1000">1000 dòng</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label>&nbsp;</label>
+                                <button type="submit" class="btn btn-search">Tìm kiếm</button>
+                            </div>
+                            <div class="filter-group">
+                                <label>&nbsp;</label>
+                                <button type="button" class="btn btn-secondary" onclick="resetFilter()">Xóa bộ lọc</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Logs Summary -->
+                <div class="logs-summary" id="logsSummary">
+                    Đang tải...
+                </div>
+
+                <!-- Logs Table -->
+                <div class="logs-container">
+                    <table class="logs-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px;">#</th>
+                                <th style="width: 130px;">Thời gian</th>
+                                <th style="width: 90px;">Mã đơn</th>
+                                <th style="width: 70px;">Hành động</th>
+                                <th>Người gửi</th>
+                                <th>Người nhận</th>
+                                <th style="width: 100px;">Trạm đến</th>
+                                <th style="width: 90px;">Giá tiền</th>
+                                <th style="width: 100px;">Trường sửa</th>
+                                <th>Giá trị cũ</th>
+                                <th>Giá trị mới</th>
+                                <th style="width: 100px;">Người sửa</th>
+                                <th style="width: 90px;">IP</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logsTableBody">
+                            <tr>
+                                <td colspan="13" class="no-logs">Đang tải dữ liệu...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 CTY DV XE DU LỊCH VÕ CÚC PHƯƠNG - All rights reserved</p>
+        </div>
+    </footer>
+
+    <script type="module" src="js/logs.js"></script>
+    <script>
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = 'login.html';
+        }
+    </script>
+</body>
+
+</html>

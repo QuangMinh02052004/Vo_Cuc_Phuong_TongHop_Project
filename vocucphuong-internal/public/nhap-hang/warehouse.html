@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kho hàng - CTY DV XE DU LỊCH VÕ CÚC PHƯƠNG</title>
+    <link rel="icon" type="image/png" href="images/logo.png">
+    <link rel="stylesheet" href="css/styles.css?v=5.0">
+    <style>.nav-switch-btn{position:fixed;bottom:20px;right:20px;z-index:9999;background:#fff;color:#2563eb;padding:10px 18px;border-radius:8px;border:2px solid #2563eb;text-decoration:none;font-weight:600;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,0.1)}.nav-switch-btn:hover{background:#2563eb;color:#fff}</style>
+</head>
+
+<body>
+    <a href="/tong-hop/index.html" class="nav-switch-btn">Tổng Hợp</a>
+    <header class="header">
+        <div class="container">
+            <div class="header-top">
+                <div class="logo-container">
+                    <img src="images/logo.png" alt="Logo" class="logo-image">
+                    <h1 class="logo">CTY DV XE DU LỊCH VÕ CÚC PHƯƠNG</h1>
+                </div>
+                <div class="user-info">
+                    <span id="currentUser">User</span>
+                    <span class="separator">|</span>
+                    <a href="#" class="link" onclick="logout()">Thoát</a>
+                </div>
+            </div>
+            <nav class="navbar">
+                <div class="nav-left">
+                    <a href="index.html" class="nav-item">Nhận hàng</a>
+                    <a href="warehouse.html" class="nav-item active">Kho hàng</a>
+                    <a href="statistics.html" class="nav-item">Thống kê</a>
+                    <a href="logs.html" class="nav-item">Lịch sử</a>
+                </div>
+                <div class="nav-right">
+                    <span class="station-badge">Trạm: <strong class="station-name"
+                            id="currentStationName"></strong></span>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="container">
+
+            <section class="management-section">
+                <!-- Form tìm kiếm -->
+                <div class="search-section">
+                    <h3 class="section-title">Tìm kiếm</h3>
+                    <form id="searchForm" class="search-form">
+                        <div class="search-row">
+                            <div class="search-group">
+                                <input type="text" id="searchKeyword" name="searchKeyword"
+                                    placeholder="Tên, điện thoại hoặc mã hàng">
+                            </div>
+                            <div class="search-group">
+                                <label>Ngày:</label>
+                                <input type="datetime-local" id="searchDateFrom" name="searchDateFrom">
+                            </div>
+                            <div class="search-group">
+                                <label>-</label>
+                                <input type="datetime-local" id="searchDateTo" name="searchDateTo">
+                            </div>
+                            <div class="search-group">
+                                <select id="searchSenderStation" name="searchSenderStation">
+                                    <option value="">-- Trạm gửi --</option>
+                                    <!-- Options loaded from data/options.js -->
+                                </select>
+                            </div>
+                            <div class="search-group">
+                                <select id="searchVehicle" name="searchVehicle">
+                                    <option value="">-- Chọn xe --</option>
+                                    <!-- Options loaded from data/options.js -->
+                                </select>
+                            </div>
+                            <div class="search-group">
+                                <select id="searchProductType" name="searchProductType">
+                                    <option value="">-- Chọn loại hàng --</option>
+                                    <!-- Options loaded from data/options.js -->
+                                </select>
+                            </div>
+                            <div class="search-group">
+                                <button type="submit" class="btn btn-search">Tìm kiếm</button>
+                                <button type="button" class="btn btn-secondary" id="resetSearchBtn">Xóa bộ lọc</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <h3 class="section-title">Danh sách hàng hóa</h3>
+
+                <!-- Bảng danh sách hàng hóa từ các trạm khác -->
+                <div class="table-wrapper">
+                    <table class="data-table" id="warehouseTable">
+                        <thead>
+                            <tr>
+                                <th>Stt</th>
+                                <th>Mã</th>
+                                <th>Người gởi</th>
+                                <th>Điện thoại</th>
+                                <th>Người nhận</th>
+                                <th>Điện thoại</th>
+                                <th>Trạm gởi</th>
+                                <th>Trạm nhận</th>
+                                <th>Ngày gởi</th>
+                                <th>Xe</th>
+                                <th>Loại hàng</th>
+                                <th>Tổng VND</th>
+                                <th>Thanh toán</th>
+                                <th>Nhân viên nhận</th>
+                                <th>Trạng thái</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="warehouseTableBody">
+                            <!-- Dữ liệu sẽ được thêm bằng JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Thống kê kho hàng -->
+                <div class="statistics-container" id="warehouseStatistics">
+                    <!-- Thống kê sẽ được thêm bằng JavaScript -->
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Modal chọn trạng thái -->
+    <div id="statusModalOverlay" class="status-modal-overlay">
+        <div class="status-modal">
+            <div class="status-modal-header">
+                <h3>Chọn trạng thái giao hàng</h3>
+            </div>
+            <div class="status-modal-body">
+                <div class="status-grid" id="statusGrid">
+                    <!-- Các option sẽ được render bằng JS -->
+                </div>
+                <!-- Ô nhập tiền thu khi chọn Đã giao -->
+                <div id="deliveredAmountSection" class="delivered-amount-section" style="display: none;">
+                    <!-- Thông tin đơn hàng để đối chiếu -->
+                    <div id="productInfoDisplay" class="product-info-display">
+                        <div class="info-row"><span class="info-label">Mã đơn:</span> <span id="infoProductId">-</span></div>
+                        <div class="info-row"><span class="info-label">Người nhận:</span> <span id="infoReceiverName">-</span></div>
+                        <div class="info-row"><span class="info-label">SĐT:</span> <span id="infoReceiverPhone">-</span></div>
+                        <div class="info-row"><span class="info-label">Giá hiện tại:</span> <span id="infoCurrentAmount" style="color: #dc2626; font-weight: bold;">-</span></div>
+                    </div>
+                    <hr style="margin: 15px 0; border-color: #e5e7eb;">
+                    <label>Số tiền đã thu:</label>
+                    <input type="number" id="deliveredAmount" placeholder="Nhập số tiền đã thu" min="0">
+                    <label style="margin-top: 10px;">Ghi chú:</label>
+                    <input type="text" id="deliveredNote" placeholder="Ghi chú (tùy chọn)">
+                    <button class="btn-confirm-delivered" onclick="confirmDelivered()">Xác nhận đã giao</button>
+                </div>
+            </div>
+            <div class="status-modal-footer">
+                <button class="btn-close-modal" onclick="closeStatusModal()">Đóng</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 CTY DV XE DU LỊCH VÕ CÚC PHƯƠNG. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script type="module" src="js/auth.js?v=4.0"></script>
+    <script type="module" src="js/warehouse.js?v=4.1"></script>
+</body>
+
+</html>

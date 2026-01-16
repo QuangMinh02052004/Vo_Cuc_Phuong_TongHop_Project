@@ -1,0 +1,53 @@
+=======================================
+CÁCH CHẠY TẤT CẢ DỰ ÁN VÕ CÚC PHƯƠNG
+=======================================
+
+=== THỨ TỰ CHẠY (mở mỗi terminal riêng) ===
+
+1. Backend TongHop (Port 5000) - CHẠY TRƯỚC
+   cd Cong_Ty_TNHH_VoCucPhuong_TongHop/quan-ly-xe-khach-backend && npm start
+
+2. Backend NhapHang (Port 5001) - CHẠY TRƯỚC
+   cd Cong_Ty_TNHH_VoCucPhuong_NhapHang-2/backend && npm start
+
+3. Website Đặt vé (Port 3000)
+   cd C-ng_Ty_TNHH_VoCucPhuong-4 && npm run dev
+
+4. Frontend NhapHang (Port 8080)
+   cd Cong_Ty_TNHH_VoCucPhuong_NhapHang-2 && npx serve -p 8080
+
+5. Frontend TongHop (Port 3001)
+   cd Cong_Ty_TNHH_VoCucPhuong_TongHop/quan-ly-xe-khach && npm start
+
+6. Mobile App (Expo)
+   cd VoCucPhuong_MobileApp && npx expo start
+
+7. Flutter App
+   cd VoCucPhuong_FlutterApp && flutter run
+
+=== KILL TẤT CẢ ===
+lsof -ti:3000,3001,3002,5000,5001,8080 | xargs kill -9 2>/dev/null
+
+=== URLs ===
+Website Đặt vé:     http://localhost:3000
+NhapHang Frontend:  http://localhost:8080
+NhapHang API:       http://localhost:5001
+TongHop Frontend:   http://localhost:3001
+TongHop API:        http://localhost:5000
+
+=== ACCOUNT ĐẶT VÉ (localhost:3000) ===
+Email                     Password      Role
+admin@vocucphuong.com     admin123456   ADMIN
+staff@vocucphuong.com     staff123456   STAFF
+user@example.com          user123456    USER
+
+=== ACCOUNT TỔNG HỢP (localhost:3001) ===
+Username    Password    Role
+admin       admin123    admin
+quanly1     admin123    manager
+nhanvien1   admin123    user
+
+=== LƯU Ý ===
+- Backend PHẢI chạy TRƯỚC frontend
+- NhapHang: Backend 5001 -> Frontend 8080
+- TongHop: Backend 5000 -> Frontend 3001

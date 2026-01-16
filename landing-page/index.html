@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vo Cuc Phuong - Quan Ly Noi Bo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .logo {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: white;
+            font-size: 28px;
+            margin-bottom: 10px;
+            text-align: center;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .subtitle {
+            color: rgba(255,255,255,0.9);
+            font-size: 16px;
+            margin-bottom: 50px;
+            text-align: center;
+        }
+
+        .buttons-container {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 200px;
+            height: 200px;
+            border-radius: 20px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .btn:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+
+        .btn-nhaphang {
+            background: linear-gradient(145deg, #11998e 0%, #38ef7d 100%);
+        }
+
+        .btn-tonghop {
+            background: linear-gradient(145deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .btn-icon {
+            font-size: 64px;
+            margin-bottom: 15px;
+        }
+
+        .btn-text {
+            color: white;
+            font-size: 18px;
+            font-weight: 600;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+        }
+
+        .footer {
+            position: fixed;
+            bottom: 20px;
+            color: rgba(255,255,255,0.7);
+            font-size: 14px;
+        }
+
+        @media (max-width: 500px) {
+            .btn {
+                width: 160px;
+                height: 160px;
+            }
+            .btn-icon {
+                font-size: 48px;
+            }
+            .btn-text {
+                font-size: 16px;
+            }
+            h1 {
+                font-size: 22px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="logo">🚌</div>
+    <h1>Vo Cuc Phuong</h1>
+    <p class="subtitle">He thong quan ly noi bo</p>
+
+    <div class="buttons-container">
+        <a href="/nhap-hang/" class="btn btn-nhaphang">
+            <span class="btn-icon">📦</span>
+            <span class="btn-text">Nhap Hang</span>
+        </a>
+
+        <a href="/tong-hop/" class="btn btn-tonghop">
+            <span class="btn-icon">🎫</span>
+            <span class="btn-text">Tong Hop</span>
+        </a>
+    </div>
+
+    <div class="footer">
+        Cong ty TNHH Vo Cuc Phuong
+    </div>
+</body>
+</html>
