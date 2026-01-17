@@ -43,12 +43,19 @@ function determineRoute(senderStation, receiverStation) {
 
 // Helper: Xác định khung giờ từ sendDate hoặc vehicle
 // Làm tròn về khung giờ gần nhất (30 phút)
+// Sử dụng UTC+7 (Vietnam timezone)
 function determineTimeSlot(sendDate, vehicle) {
   // Nếu có sendDate, lấy giờ từ đó
   if (sendDate) {
     const d = new Date(sendDate);
-    let hours = d.getHours();
-    let minutes = d.getMinutes();
+    // Chuyển sang giờ Việt Nam (UTC+7)
+    let hours = d.getUTCHours() + 7;
+    let minutes = d.getUTCMinutes();
+
+    // Xử lý overflow
+    if (hours >= 24) hours -= 24;
+
+    console.log(`[determineTimeSlot] Input: ${sendDate}, UTC: ${d.getUTCHours()}:${d.getUTCMinutes()}, Vietnam: ${hours}:${minutes}`);
 
     // Làm tròn đến 30 phút gần nhất
     if (minutes < 15) {
@@ -68,10 +75,13 @@ function determineTimeSlot(sendDate, vehicle) {
       return '20:30';
     }
 
-    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+    const result = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+    console.log(`[determineTimeSlot] Result: ${result}`);
+    return result;
   }
 
   // Default: 08:00
+  console.log('[determineTimeSlot] No sendDate, using default 08:00');
   return '08:00';
 }
 
