@@ -41,10 +41,37 @@ function determineRoute(senderStation, receiverStation) {
   return 'Sài Gòn - Long Khánh';
 }
 
-// Helper: Xác định khung giờ gần nhất từ vehicle (biển số xe)
-// Trong thực tế, có thể cần map biển số xe với khung giờ cụ thể
-function determineTimeSlot(vehicle) {
-  // Default: 08:00 - có thể cải thiện bằng cách map vehicle -> timeSlot
+// Helper: Xác định khung giờ từ sendDate hoặc vehicle
+// Làm tròn về khung giờ gần nhất (30 phút)
+function determineTimeSlot(sendDate, vehicle) {
+  // Nếu có sendDate, lấy giờ từ đó
+  if (sendDate) {
+    const d = new Date(sendDate);
+    let hours = d.getHours();
+    let minutes = d.getMinutes();
+
+    // Làm tròn đến 30 phút gần nhất
+    if (minutes < 15) {
+      minutes = 0;
+    } else if (minutes < 45) {
+      minutes = 30;
+    } else {
+      minutes = 0;
+      hours = (hours + 1) % 24;
+    }
+
+    // Giới hạn trong khoảng 05:30 - 20:30
+    if (hours < 5 || (hours === 5 && minutes < 30)) {
+      return '05:30';
+    }
+    if (hours > 20 || (hours === 20 && minutes > 30)) {
+      return '20:30';
+    }
+
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+  }
+
+  // Default: 08:00
   return '08:00';
 }
 
@@ -121,8 +148,10 @@ export async function POST(request) {
 
     // Xác định route và time
     const route = determineRoute(senderStation, station);
-    const time = determineTimeSlot(vehicle);
+    const time = determineTimeSlot(sendDate, vehicle);
     const formattedDate = formatDate(sendDate || new Date());
+
+    console.log(`[Webhook NhapHang] Route: ${route}, Time: ${time}, Date: ${formattedDate}`);
 
     // Tìm hoặc tạo timeslot
     const timeSlot = await findOrCreateTimeSlot(
