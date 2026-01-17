@@ -21,9 +21,9 @@ function determineRoute(senderStation, receiverStation) {
   const receiver = (receiverStation || '').toLowerCase();
 
   // Nếu gửi từ khu vực Sài Gòn
-  const sgKeywords = ['an đông', 'hàng xanh', 'sài gòn', 'sg', 'hcm'];
+  const sgKeywords = ['an đông', 'hàng xanh', 'sài gòn', 'sg', 'hcm', 'bình dương', 'thủ đức'];
   // Nếu gửi từ khu vực Long Khánh
-  const lkKeywords = ['long khánh', 'xuân lộc', 'sông ray', 'xuân trường', 'bảo bình'];
+  const lkKeywords = ['long khánh', 'xuân lộc', 'sông ray', 'xuân trường', 'bảo bình', 'định quán', 'tân phú'];
 
   const senderIsSG = sgKeywords.some(k => sender.includes(k));
   const senderIsLK = lkKeywords.some(k => sender.includes(k));
@@ -31,14 +31,14 @@ function determineRoute(senderStation, receiverStation) {
   const receiverIsLK = lkKeywords.some(k => receiver.includes(k));
 
   if (senderIsSG || receiverIsLK) {
-    return 'Sài Gòn- Long Khánh';
+    return 'Sài Gòn - Long Khánh';
   }
   if (senderIsLK || receiverIsSG) {
     return 'Long Khánh - Sài Gòn';
   }
 
   // Default - phần lớn là từ Sài Gòn về Long Khánh
-  return 'Sài Gòn- Long Khánh';
+  return 'Sài Gòn - Long Khánh';
 }
 
 // Helper: Xác định khung giờ gần nhất từ vehicle (biển số xe)

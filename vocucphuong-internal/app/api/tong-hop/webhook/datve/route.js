@@ -19,15 +19,27 @@ function formatDate(dateStr) {
 function determineRoute(routeStr) {
   const route = (routeStr || '').toLowerCase();
 
-  if (route.includes('sài gòn') && route.includes('long khánh')) {
-    return 'Sài Gòn- Long Khánh';
+  // Kiểm tra vị trí của "sài gòn" và "long khánh" để xác định hướng
+  const sgPos = route.indexOf('sài gòn');
+  const lkPos = route.indexOf('long khánh');
+
+  if (sgPos !== -1 && lkPos !== -1) {
+    if (sgPos < lkPos) {
+      return 'Sài Gòn - Long Khánh';
+    } else {
+      return 'Long Khánh - Sài Gòn';
+    }
   }
-  if (route.includes('long khánh') && route.includes('sài gòn')) {
+
+  if (route.includes('sài gòn')) {
+    return 'Sài Gòn - Long Khánh';
+  }
+  if (route.includes('long khánh')) {
     return 'Long Khánh - Sài Gòn';
   }
 
   // Default
-  return 'Sài Gòn- Long Khánh';
+  return 'Sài Gòn - Long Khánh';
 }
 
 // Helper: Tìm hoặc tạo timeslot phù hợp
