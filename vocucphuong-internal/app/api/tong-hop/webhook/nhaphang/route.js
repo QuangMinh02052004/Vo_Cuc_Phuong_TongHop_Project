@@ -42,7 +42,8 @@ function determineRoute(senderStation, receiverStation) {
 }
 
 // Helper: Xác định khung giờ từ sendDate hoặc vehicle
-// Làm tròn về khung giờ gần nhất (30 phút)
+// Làm tròn LÊN đến khung giờ tiếp theo (30 phút)
+// Ví dụ: 20:36 → 21:00, 20:15 → 20:30
 // Sử dụng UTC+7 (Vietnam timezone)
 function determineTimeSlot(sendDate, vehicle) {
   // Nếu có sendDate, lấy giờ từ đó
@@ -52,27 +53,29 @@ function determineTimeSlot(sendDate, vehicle) {
     let hours = d.getUTCHours() + 7;
     let minutes = d.getUTCMinutes();
 
-    // Xử lý overflow
+    // Xử lý overflow (qua ngày)
     if (hours >= 24) hours -= 24;
 
     console.log(`[determineTimeSlot] Input: ${sendDate}, UTC: ${d.getUTCHours()}:${d.getUTCMinutes()}, Vietnam: ${hours}:${minutes}`);
 
-    // Làm tròn đến 30 phút gần nhất
-    if (minutes < 15) {
-      minutes = 0;
-    } else if (minutes < 45) {
+    // Làm tròn LÊN đến slot tiếp theo (30 phút)
+    // 00-29 phút → :30 cùng giờ
+    // 30-59 phút → :00 giờ tiếp theo
+    if (minutes === 0 || minutes === 30) {
+      // Đúng slot, giữ nguyên
+    } else if (minutes < 30) {
       minutes = 30;
     } else {
       minutes = 0;
       hours = (hours + 1) % 24;
     }
 
-    // Giới hạn trong khoảng 05:30 - 20:30
+    // Giới hạn trong khoảng 05:30 - 21:00
     if (hours < 5 || (hours === 5 && minutes < 30)) {
       return '05:30';
     }
-    if (hours > 20 || (hours === 20 && minutes > 30)) {
-      return '20:30';
+    if (hours > 21 || (hours === 21 && minutes > 0)) {
+      return '21:00';
     }
 
     const result = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
