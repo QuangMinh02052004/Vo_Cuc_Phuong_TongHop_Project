@@ -52,19 +52,20 @@ export async function POST(request) {
   }
 }
 
-// PUT - Chuẩn hóa route names
+// PUT - Chuẩn hóa route names về FORMAT GỐC
+// FORMAT GỐC: 'Sài Gòn- Long Khánh' (KHÔNG space) và 'Long Khánh - Sài Gòn' (CÓ space)
 export async function PUT(request) {
   try {
-    // Chuẩn hóa route names - thêm dấu cách sau gạch ngang
-    // "Sài Gòn- Long Khánh" -> "Sài Gòn - Long Khánh"
-    // "Long Khánh- Sài Gòn" -> "Long Khánh - Sài Gòn"
+    // Chuẩn hóa về format gốc
+    // "Sài Gòn - Long Khánh" -> "Sài Gòn- Long Khánh" (bỏ space trước dấu gạch)
 
     const result1 = await queryTongHop(`
       UPDATE "TH_TimeSlots"
-      SET route = 'Sài Gòn - Long Khánh'
-      WHERE route = 'Sài Gòn- Long Khánh'
+      SET route = 'Sài Gòn- Long Khánh'
+      WHERE route = 'Sài Gòn - Long Khánh'
     `);
 
+    // "Long Khánh- Sài Gòn" -> "Long Khánh - Sài Gòn" (thêm space nếu thiếu)
     const result2 = await queryTongHop(`
       UPDATE "TH_TimeSlots"
       SET route = 'Long Khánh - Sài Gòn'
@@ -74,8 +75,8 @@ export async function PUT(request) {
     // Cũng chuẩn hóa bookings
     await queryTongHop(`
       UPDATE "TH_Bookings"
-      SET route = 'Sài Gòn - Long Khánh'
-      WHERE route = 'Sài Gòn- Long Khánh'
+      SET route = 'Sài Gòn- Long Khánh'
+      WHERE route = 'Sài Gòn - Long Khánh'
     `);
 
     await queryTongHop(`
@@ -86,7 +87,7 @@ export async function PUT(request) {
 
     return NextResponse.json({
       success: true,
-      message: 'Đã chuẩn hóa route names'
+      message: 'Đã chuẩn hóa route names về format gốc'
     });
 
   } catch (error) {

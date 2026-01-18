@@ -1,11 +1,26 @@
-import { query, queryOne } from '../../../../../lib/database';
+import { queryNhapHang, queryOneNhapHang, queryTongHop } from '../../../../../lib/database';
 import { NextResponse } from 'next/server';
 
-// Helper function để ghi log thay đổi
+// ===========================================
+// API: NH_Products/[id] - Chi tiết đơn hàng
+// ===========================================
+// GET /api/nhap-hang/products/[id] - Lấy chi tiết
+// PUT /api/nhap-hang/products/[id] - Cập nhật toàn bộ
+// PATCH /api/nhap-hang/products/[id] - Cập nhật một phần
+// DELETE /api/nhap-hang/products/[id] - Xóa đơn hàng
+
+// Lấy IP từ request
+function getClientIP(request) {
+  return request.headers.get('x-forwarded-for')?.split(',')[0] ||
+         request.headers.get('x-real-ip') ||
+         null;
+}
+
+// Helper: Ghi log thay đổi
 async function logProductChange(productId, action, field, oldValue, newValue, changedBy, ipAddress) {
   try {
-    await query(`
-      INSERT INTO "ProductLogs" ("productId", action, field, "oldValue", "newValue", "changedBy", "ipAddress")
+    await queryNhapHang(`
+      INSERT INTO "NH_ProductLogs" ("productId", action, field, "oldValue", "newValue", "changedBy", "ipAddress")
       VALUES ($1, $2, $3, $4, $5, $6, $7)
     `, [
       productId,
@@ -21,44 +36,75 @@ async function logProductChange(productId, action, field, oldValue, newValue, ch
   }
 }
 
-// Lấy IP từ request
-function getClientIP(request) {
-  return request.headers.get('x-forwarded-for')?.split(',')[0] ||
-         request.headers.get('x-real-ip') ||
-         null;
-}
-
-// GET /api/nhap-hang/products/:id
+// GET - Lấy chi tiết đơn hàng
 export async function GET(request, { params }) {
   try {
-    const product = await queryOne('SELECT * FROM "Products" WHERE id = $1', [params.id]);
+    const { id } = await params;
+
+    const product = await queryOneNhapHang(`
+      SELECT * FROM "NH_Products" WHERE id = $1
+    `, [id]);
 
     if (!product) {
-      return NextResponse.json({ success: false, message: 'Không tìm thấy sản phẩm!' }, { status: 404 });
+      return NextResponse.json({
+        success: false,
+        error: 'Đơn hàng không tồn tại',
+        message: 'Không tìm thấy sản phẩm!'
+      }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true, product });
+    // Get logs for this product
+    const logs = await queryNhapHang(`
+      SELECT * FROM "NH_ProductLogs"
+      WHERE "productId" = $1
+      ORDER BY "changedAt" DESC
+      LIMIT 50
+    `, [id]);
+
+    return NextResponse.json({
+      success: true,
+      data: product,
+      product, // Backward compatibility
+      logs
+    });
+
   } catch (error) {
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+    console.error('[NH_Products/id] GET Error:', error);
+    return NextResponse.json({
+      success: false,
+      error: error.message,
+      message: error.message
+    }, { status: 500 });
   }
 }
 
-// PUT /api/nhap-hang/products/:id
+// PUT - Cập nhật đơn hàng
 export async function PUT(request, { params }) {
   try {
+    const { id } = await params;
     const body = await request.json();
+    const clientIP = getClientIP(request);
     const { changedBy } = body;
-    const existing = await queryOne('SELECT * FROM "Products" WHERE id = $1', [params.id]);
+
+    // Get current product
+    const existing = await queryOneNhapHang(`
+      SELECT * FROM "NH_Products" WHERE id = $1
+    `, [id]);
 
     if (!existing) {
-      return NextResponse.json({ success: false, message: 'Không tìm thấy sản phẩm!' }, { status: 404 });
+      return NextResponse.json({
+        success: false,
+        error: 'Đơn hàng không tồn tại',
+        message: 'Không tìm thấy sản phẩm!'
+      }, { status: 404 });
     }
 
     const allowedFields = [
       'senderName', 'senderPhone', 'senderStation',
       'receiverName', 'receiverPhone', 'station',
       'productType', 'quantity', 'vehicle', 'insurance', 'totalAmount',
-      'paymentStatus', 'status', 'deliveryStatus', 'notes'
+      'paymentStatus', 'status', 'deliveryStatus', 'employee', 'notes',
+      'deliveredAt'
     ];
 
     const updates = [];
@@ -86,29 +132,32 @@ export async function PUT(request, { params }) {
     }
 
     if (updates.length === 0) {
-      return NextResponse.json({ success: false, message: 'Không có dữ liệu để cập nhật!' }, { status: 400 });
+      return NextResponse.json({
+        success: false,
+        error: 'Không có dữ liệu để cập nhật',
+        message: 'Không có dữ liệu để cập nhật!'
+      }, { status: 400 });
     }
 
     updates.push(`"updatedAt" = NOW()`);
-    values.push(params.id);
+    values.push(id);
 
-    const sqlQuery = `UPDATE "Products" SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING *`;
-    const result = await query(sqlQuery, values);
+    const sqlQuery = `UPDATE "NH_Products" SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING *`;
+    const result = await queryNhapHang(sqlQuery, values);
+
+    const updatedProduct = result[0];
 
     // Ghi log các thay đổi
-    const clientIP = getClientIP(request);
     const userName = changedBy || 'system';
 
     if (changedFields.length === 1) {
-      // Chỉ có 1 field thay đổi
       const change = changedFields[0];
-      await logProductChange(params.id, 'update', change.field, change.oldValue, change.newValue, userName, clientIP);
+      await logProductChange(id, 'update', change.field, change.oldValue, change.newValue, userName, clientIP);
     } else if (changedFields.length > 1) {
-      // Nhiều field thay đổi - ghi tổng hợp
       const oldValues = changedFields.map(c => ({ [c.field]: c.oldValue }));
       const newValues = changedFields.map(c => ({ [c.field]: c.newValue }));
       await logProductChange(
-        params.id,
+        id,
         'update',
         `${changedFields.length} fields`,
         JSON.stringify(oldValues),
@@ -121,40 +170,78 @@ export async function PUT(request, { params }) {
     return NextResponse.json({
       success: true,
       message: 'Cập nhật thành công!',
-      product: result[0]
+      data: updatedProduct,
+      product: updatedProduct
     });
+
   } catch (error) {
-    console.error('Error updating product:', error);
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+    console.error('[NH_Products/id] PUT Error:', error);
+    return NextResponse.json({
+      success: false,
+      error: error.message,
+      message: error.message
+    }, { status: 500 });
   }
 }
 
-// DELETE /api/nhap-hang/products/:id
+// DELETE - Xóa đơn hàng
 export async function DELETE(request, { params }) {
   try {
+    const { id } = await params;
+    const clientIP = getClientIP(request);
     const { searchParams } = new URL(request.url);
     const changedBy = searchParams.get('changedBy') || 'system';
 
-    const existing = await queryOne('SELECT * FROM "Products" WHERE id = $1', [params.id]);
+    // Get current product
+    const existing = await queryOneNhapHang(`
+      SELECT * FROM "NH_Products" WHERE id = $1
+    `, [id]);
 
     if (!existing) {
-      return NextResponse.json({ success: false, message: 'Không tìm thấy sản phẩm!' }, { status: 404 });
+      return NextResponse.json({
+        success: false,
+        error: 'Đơn hàng không tồn tại',
+        message: 'Không tìm thấy sản phẩm!'
+      }, { status: 404 });
     }
 
-    // Ghi log trước khi xóa
-    const clientIP = getClientIP(request);
+    // If synced to TongHop, delete the booking too
+    if (existing.tongHopBookingId) {
+      try {
+        await queryTongHop(`
+          DELETE FROM "TH_Bookings" WHERE id = $1
+        `, [existing.tongHopBookingId]);
+        console.log(`[NH_Products] Deleted TongHop booking: ${existing.tongHopBookingId}`);
+      } catch (thError) {
+        console.error('[NH_Products] Error deleting TongHop booking:', thError.message);
+      }
+    }
+
+    // Log deletion before deleting
     const productInfo = {
       receiverName: existing.receiverName,
       receiverPhone: existing.receiverPhone,
       totalAmount: existing.totalAmount
     };
-    await logProductChange(params.id, 'delete', 'product_info', JSON.stringify(productInfo), null, changedBy, clientIP);
+    await logProductChange(id, 'delete', 'product_info', JSON.stringify(productInfo), null, changedBy, clientIP);
 
-    await query('DELETE FROM "Products" WHERE id = $1', [params.id]);
+    // Delete product
+    await queryNhapHang(`
+      DELETE FROM "NH_Products" WHERE id = $1
+    `, [id]);
 
-    return NextResponse.json({ success: true, message: 'Xóa thành công!' });
+    return NextResponse.json({
+      success: true,
+      message: 'Xóa thành công!',
+      deletedId: id
+    });
+
   } catch (error) {
-    console.error('Error deleting product:', error);
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+    console.error('[NH_Products/id] DELETE Error:', error);
+    return NextResponse.json({
+      success: false,
+      error: error.message,
+      message: error.message
+    }, { status: 500 });
   }
 }

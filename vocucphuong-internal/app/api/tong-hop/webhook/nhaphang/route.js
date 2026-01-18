@@ -31,14 +31,14 @@ function determineRoute(senderStation, receiverStation) {
   const receiverIsLK = lkKeywords.some(k => receiver.includes(k));
 
   if (senderIsSG || receiverIsLK) {
-    return 'Sài Gòn - Long Khánh';
+    return 'Sài Gòn- Long Khánh';  // KHÔNG có space trước dấu gạch (theo format gốc)
   }
   if (senderIsLK || receiverIsSG) {
-    return 'Long Khánh - Sài Gòn';
+    return 'Long Khánh - Sài Gòn';  // CÓ space trước dấu gạch (theo format gốc)
   }
 
   // Default - phần lớn là từ Sài Gòn về Long Khánh
-  return 'Sài Gòn - Long Khánh';
+  return 'Sài Gòn- Long Khánh';  // KHÔNG có space trước dấu gạch
 }
 
 // Helper: Xác định khung giờ từ sendDate hoặc vehicle

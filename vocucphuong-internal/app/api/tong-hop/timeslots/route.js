@@ -1,40 +1,56 @@
 import { queryTongHop, queryOneTongHop } from '../../../../lib/database';
 import { NextResponse } from 'next/server';
 
-// Danh sách khung giờ mặc định (5:30 - 20:00)
-const DEFAULT_TIMES = [
+// Khung giờ cho tuyến Sài Gòn - Long Khánh (05:30 - 20:00)
+const SGtoLK_TIMES = [
   '05:30', '06:00', '06:30', '07:00', '07:30', '08:00', '08:30', '09:00', '09:30', '10:00',
   '10:30', '11:00', '11:30', '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00',
   '15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00'
 ];
 
-const DEFAULT_ROUTES = ['Sài Gòn - Long Khánh', 'Long Khánh - Sài Gòn'];
+// Khung giờ cho tuyến Long Khánh - Sài Gòn (05:00 - 19:30)
+const LKtoSG_TIMES = [
+  '05:00', '05:30', '06:00', '06:30', '07:00', '07:30', '08:00', '08:30', '09:00', '09:30',
+  '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '13:00', '13:30', '14:00', '14:30',
+  '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00', '19:30'
+];
 
-// Helper: Tạo các timeslot mặc định cho một ngày
-async function createDefaultTimeslots(date, route = null) {
-  const routes = route ? [route] : DEFAULT_ROUTES;
+// Routes với format chính xác (SG không có space trước dash, LK có space)
+const ROUTE_SG_LK = 'Sài Gòn- Long Khánh';
+const ROUTE_LK_SG = 'Long Khánh - Sài Gòn';
+const DEFAULT_ROUTES = [ROUTE_SG_LK, ROUTE_LK_SG];
+
+// Helper: Lấy danh sách times theo route
+function getTimesForRoute(route) {
+  if (route === ROUTE_LK_SG) {
+    return LKtoSG_TIMES;
+  }
+  return SGtoLK_TIMES;
+}
+
+// Helper: Tạo các timeslot mặc định cho một ngày và route
+async function createDefaultTimeslots(date, route) {
+  const times = getTimesForRoute(route);
   const created = [];
 
-  for (const r of routes) {
-    for (const time of DEFAULT_TIMES) {
-      // Kiểm tra đã tồn tại chưa
-      const existing = await queryOneTongHop(
-        `SELECT id FROM "TH_TimeSlots" WHERE time = $1 AND date = $2 AND route = $3`,
-        [time, date, r]
-      );
+  for (const time of times) {
+    // Kiểm tra đã tồn tại chưa
+    const existing = await queryOneTongHop(
+      `SELECT id FROM "TH_TimeSlots" WHERE time = $1 AND date = $2 AND route = $3`,
+      [time, date, route]
+    );
 
-      if (!existing) {
-        const result = await queryTongHop(`
-          INSERT INTO "TH_TimeSlots" (time, date, route, type, code, driver, phone)
-          VALUES ($1, $2, $3, 'Xe 28G', '', '', '')
-          RETURNING *
-        `, [time, date, r]);
-        created.push(result[0]);
-      }
+    if (!existing) {
+      const result = await queryTongHop(`
+        INSERT INTO "TH_TimeSlots" (time, date, route, type, code, driver, phone)
+        VALUES ($1, $2, $3, 'Xe 28G', '', '', '')
+        RETURNING *
+      `, [time, date, route]);
+      created.push(result[0]);
     }
   }
 
-  console.log(`[Timeslots] Đã tạo ${created.length} timeslot mặc định cho ngày ${date}`);
+  console.log(`[Timeslots] Đã tạo ${created.length} timeslot mặc định cho ngày ${date} route "${route}"`);
   return created;
 }
 
@@ -47,15 +63,21 @@ export async function GET(request) {
 
     // Nếu có date, kiểm tra và tạo timeslots mặc định nếu cần
     if (date) {
-      const existingCount = await queryOneTongHop(
-        `SELECT COUNT(*) as count FROM "TH_TimeSlots" WHERE date = $1`,
-        [date]
-      );
+      // Kiểm tra cho TỪNG route, không phải tổng thể
+      for (const r of DEFAULT_ROUTES) {
+        // Nếu có filter route cụ thể, chỉ tạo cho route đó
+        if (route && r !== route) continue;
 
-      // Nếu chưa có timeslot nào cho ngày này, tạo mặc định
-      if (parseInt(existingCount?.count || '0') === 0) {
-        console.log(`[Timeslots] Không có timeslot cho ngày ${date}, đang tạo mặc định...`);
-        await createDefaultTimeslots(date, route);
+        const existingCount = await queryOneTongHop(
+          `SELECT COUNT(*) as count FROM "TH_TimeSlots" WHERE date = $1 AND route = $2`,
+          [date, r]
+        );
+
+        // Nếu chưa có timeslot nào cho ngày + route này, tạo mặc định
+        if (parseInt(existingCount?.count || '0') === 0) {
+          console.log(`[Timeslots] Không có timeslot cho ngày ${date} route "${r}", đang tạo mặc định...`);
+          await createDefaultTimeslots(date, r);
+        }
       }
     }
 

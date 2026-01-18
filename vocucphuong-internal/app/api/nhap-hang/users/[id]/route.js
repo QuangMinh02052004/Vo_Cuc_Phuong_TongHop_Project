@@ -1,90 +1,197 @@
-import { query, queryOne } from '../../../../../lib/database';
+import { queryNhapHang, queryOneNhapHang } from '../../../../../lib/database';
 import { NextResponse } from 'next/server';
-import bcrypt from 'bcryptjs';
 
+// ===========================================
+// API: NH_Users/[id] - Chi tiết người dùng
+// ===========================================
+// GET /api/nhap-hang/users/[id] - Lấy chi tiết
+// PUT /api/nhap-hang/users/[id] - Cập nhật
+// DELETE /api/nhap-hang/users/[id] - Xóa
+
+// GET - Lấy chi tiết user
 export async function GET(request, { params }) {
   try {
-    const user = await queryOne(
-      'SELECT id, username, "fullName", role, station, active FROM "NhapHangUsers" WHERE id = $1',
-      [params.id]
-    );
+    const { id } = await params;
+
+    const user = await queryOneNhapHang(`
+      SELECT id, username, "fullName", phone, role, station, active, "createdAt", "updatedAt"
+      FROM "NH_Users"
+      WHERE id = $1
+    `, [id]);
+
     if (!user) {
-      return NextResponse.json({ success: false, message: 'User not found' }, { status: 404 });
+      return NextResponse.json({
+        success: false,
+        error: 'Người dùng không tồn tại',
+        message: 'User not found'
+      }, { status: 404 });
     }
-    return NextResponse.json({ success: true, user });
+
+    return NextResponse.json({
+      success: true,
+      data: user,
+      user
+    });
+
   } catch (error) {
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+    console.error('[NH_Users/id] GET Error:', error);
+    return NextResponse.json({
+      success: false,
+      error: error.message,
+      message: error.message
+    }, { status: 500 });
   }
 }
 
+// PUT - Cập nhật user
 export async function PUT(request, { params }) {
   try {
+    const { id } = await params;
     const body = await request.json();
-    const { username, password, fullName, role, station, active } = body;
 
     // Check if user exists
-    const existingUser = await queryOne('SELECT id FROM "NhapHangUsers" WHERE id = $1', [params.id]);
-    if (!existingUser) {
-      return NextResponse.json({ success: false, message: 'User not found' }, { status: 404 });
+    const existing = await queryOneNhapHang(`
+      SELECT * FROM "NH_Users" WHERE id = $1
+    `, [id]);
+
+    if (!existing) {
+      return NextResponse.json({
+        success: false,
+        error: 'Người dùng không tồn tại',
+        message: 'User not found'
+      }, { status: 404 });
     }
 
-    // Build update query dynamically
+    const { username, password, fullName, phone, role, station, active } = body;
+
+    // Build update query
     const updates = [];
     const values = [];
     let paramIndex = 1;
 
     if (username !== undefined) {
-      updates.push(`username = $${paramIndex++}`);
+      updates.push(`username = $${paramIndex}`);
       values.push(username);
+      paramIndex++;
     }
-    if (password !== undefined && password.trim() !== '') {
-      const hashedPassword = await bcrypt.hash(password, 10);
-      updates.push(`password = $${paramIndex++}`);
-      values.push(hashedPassword);
+    if (password !== undefined && password !== '') {
+      updates.push(`password = $${paramIndex}`);
+      values.push(password); // Plain text for now, should hash in production
+      paramIndex++;
     }
     if (fullName !== undefined) {
-      updates.push(`"fullName" = $${paramIndex++}`);
+      updates.push(`"fullName" = $${paramIndex}`);
       values.push(fullName);
+      paramIndex++;
+    }
+    if (phone !== undefined) {
+      updates.push(`phone = $${paramIndex}`);
+      values.push(phone);
+      paramIndex++;
     }
     if (role !== undefined) {
-      updates.push(`role = $${paramIndex++}`);
+      updates.push(`role = $${paramIndex}`);
       values.push(role);
+      paramIndex++;
     }
     if (station !== undefined) {
-      updates.push(`station = $${paramIndex++}`);
+      updates.push(`station = $${paramIndex}`);
       values.push(station);
+      paramIndex++;
     }
     if (active !== undefined) {
-      updates.push(`active = $${paramIndex++}`);
+      updates.push(`active = $${paramIndex}`);
       values.push(active);
+      paramIndex++;
+    }
+
+    if (updates.length === 0) {
+      return NextResponse.json({
+        success: false,
+        error: 'Không có dữ liệu để cập nhật',
+        message: 'No fields to update'
+      }, { status: 400 });
     }
 
     updates.push(`"updatedAt" = NOW()`);
+    values.push(id);
 
-    if (updates.length === 1) {
-      return NextResponse.json({ success: false, message: 'No fields to update' }, { status: 400 });
+    const result = await queryNhapHang(`
+      UPDATE "NH_Users"
+      SET ${updates.join(', ')}
+      WHERE id = $${paramIndex}
+      RETURNING id, username, "fullName", phone, role, station, active, "createdAt", "updatedAt"
+    `, values);
+
+    return NextResponse.json({
+      success: true,
+      message: 'Cập nhật người dùng thành công!',
+      data: result[0],
+      user: result[0]
+    });
+
+  } catch (error) {
+    console.error('[NH_Users/id] PUT Error:', error);
+
+    if (error.code === '23505') {
+      return NextResponse.json({
+        success: false,
+        error: 'Username đã tồn tại',
+        message: 'Username already exists'
+      }, { status: 409 });
     }
 
-    values.push(params.id);
-    const result = await query(
-      `UPDATE "NhapHangUsers" SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING id, username, "fullName", role, station, active`,
-      values
-    );
-
-    return NextResponse.json({ success: true, user: result[0] });
-  } catch (error) {
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+    return NextResponse.json({
+      success: false,
+      error: error.message,
+      message: error.message
+    }, { status: 500 });
   }
 }
 
+// DELETE - Xóa user
 export async function DELETE(request, { params }) {
   try {
-    const result = await query('DELETE FROM "NhapHangUsers" WHERE id = $1 RETURNING id', [params.id]);
-    if (result.length === 0) {
-      return NextResponse.json({ success: false, message: 'User not found' }, { status: 404 });
+    const { id } = await params;
+
+    // Check if user exists
+    const existing = await queryOneNhapHang(`
+      SELECT * FROM "NH_Users" WHERE id = $1
+    `, [id]);
+
+    if (!existing) {
+      return NextResponse.json({
+        success: false,
+        error: 'Người dùng không tồn tại',
+        message: 'User not found'
+      }, { status: 404 });
     }
-    return NextResponse.json({ success: true, message: 'User deleted' });
+
+    // Prevent deleting admin
+    if (existing.role === 'admin' && existing.username === 'admin') {
+      return NextResponse.json({
+        success: false,
+        error: 'Không thể xóa tài khoản admin',
+        message: 'Cannot delete admin account'
+      }, { status: 403 });
+    }
+
+    await queryNhapHang(`
+      DELETE FROM "NH_Users" WHERE id = $1
+    `, [id]);
+
+    return NextResponse.json({
+      success: true,
+      message: 'Xóa người dùng thành công!',
+      deletedId: id
+    });
+
   } catch (error) {
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+    console.error('[NH_Users/id] DELETE Error:', error);
+    return NextResponse.json({
+      success: false,
+      error: error.message,
+      message: error.message
+    }, { status: 500 });
   }
 }

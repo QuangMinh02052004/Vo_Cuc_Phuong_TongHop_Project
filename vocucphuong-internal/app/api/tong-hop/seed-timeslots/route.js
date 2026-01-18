@@ -62,10 +62,10 @@ export async function GET(request) {
         params.push(time, dateString, 'Sài Gòn- Long Khánh', 'Xe 28G');
       }
 
-      // Tuyến Long Khánh - Sài Gòn
+      // Tuyến Long Khánh - Sài Gòn (CÓ space trước dấu gạch - format gốc)
       for (const time of LKtoSG_times) {
         values.push(`($${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++})`);
-        params.push(time, dateString, 'Long Khánh- Sài Gòn', 'Xe 28G');
+        params.push(time, dateString, 'Long Khánh - Sài Gòn', 'Xe 28G');
       }
 
       // Batch insert cho 1 ngày (60 records)

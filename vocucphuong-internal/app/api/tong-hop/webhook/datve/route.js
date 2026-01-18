@@ -16,6 +16,7 @@ function formatDate(dateStr) {
 }
 
 // Helper: Xác định route name từ route string
+// FORMAT GỐC: 'Sài Gòn- Long Khánh' (KHÔNG có space) và 'Long Khánh - Sài Gòn' (CÓ space)
 function determineRoute(routeStr) {
   const route = (routeStr || '').toLowerCase();
 
@@ -25,21 +26,21 @@ function determineRoute(routeStr) {
 
   if (sgPos !== -1 && lkPos !== -1) {
     if (sgPos < lkPos) {
-      return 'Sài Gòn - Long Khánh';
+      return 'Sài Gòn- Long Khánh';  // KHÔNG có space trước dấu gạch
     } else {
-      return 'Long Khánh - Sài Gòn';
+      return 'Long Khánh - Sài Gòn';  // CÓ space trước dấu gạch
     }
   }
 
   if (route.includes('sài gòn')) {
-    return 'Sài Gòn - Long Khánh';
+    return 'Sài Gòn- Long Khánh';  // KHÔNG có space
   }
   if (route.includes('long khánh')) {
-    return 'Long Khánh - Sài Gòn';
+    return 'Long Khánh - Sài Gòn';  // CÓ space
   }
 
   // Default
-  return 'Sài Gòn - Long Khánh';
+  return 'Sài Gòn- Long Khánh';  // KHÔNG có space
 }
 
 // Helper: Tìm hoặc tạo timeslot phù hợp
