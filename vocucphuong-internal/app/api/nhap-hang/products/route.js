@@ -56,21 +56,67 @@ function isDocDuong(stationName) {
   return lower.includes('dọc đường') || lower.includes('doc duong');
 }
 
-// Helper: Determine route based on stations
+// Helper: Determine route based on sender station (matching original logic)
 function determineRoute(senderStation, receiverStation) {
-  const saiGonStations = ['AN ĐÔNG', 'HÀNG XANH', 'NGUYỄN CƯ TRINH', 'CHỢ CẦU', 'NGÃ TƯ GA', 'SUỐI TIÊN', 'BẾN XE MIỀN ĐÔNG'];
-  const longKhanhStations = ['LONG KHÁNH', 'XUÂN LỘC'];
-
-  const senderUpper = (senderStation || '').toUpperCase();
-  const receiverUpper = (receiverStation || '').toUpperCase();
-
-  const senderIsSaiGon = saiGonStations.some(s => senderUpper.includes(s));
-  const receiverIsLongKhanh = longKhanhStations.some(s => receiverUpper.includes(s));
-
-  if (senderIsSaiGon || receiverIsLongKhanh) {
+  if (!senderStation) {
+    console.log('[RouteMapper] No senderStation, defaulting to "Sài Gòn- Long Khánh"');
     return 'Sài Gòn- Long Khánh';
   }
-  return 'Long Khánh - Sài Gòn';
+
+  const stationName = senderStation.toLowerCase();
+
+  // Các trạm ở khu vực Long Khánh (GỬI TỪ Long Khánh ĐI Sài Gòn)
+  const longKhanhStations = [
+    'trảng bom', 'trang bom',
+    'dầu giây', 'dau giay',
+    'long khánh', 'long khanh',
+    'bưu điện trảng bom', 'bu dien trang bom',
+    'thu phí bầu cá', 'thu phi bau ca', 'bau ca',
+    'hưng lộc', 'hung loc',
+    'tam hiệp', 'tam hiep',
+    'hố nai', 'ho nai',
+    'bến xe hố nai', 'ben xe ho nai',
+    'cầu sập', 'cau sap',
+    'chợ sặt', 'cho sat',
+    'ngã 4 621', 'nga 4 621',
+    'tân vạn', 'tan van',
+    'amata', 'xuân lộc', 'xuan loc'
+  ];
+
+  const isLongKhanhStation = longKhanhStations.some(name => stationName.includes(name));
+
+  if (isLongKhanhStation) {
+    console.log(`[RouteMapper] "${senderStation}" → "Long Khánh - Sài Gòn" (station in LK area)`);
+    return 'Long Khánh - Sài Gòn';
+  }
+
+  // Các trạm ở khu vực Sài Gòn (GỬI TỪ Sài Gòn ĐI Long Khánh)
+  const saigonStations = [
+    'an đông', 'an dong',
+    'metro', 'cantavil',
+    'suối tiên', 'suoi tien',
+    'cầu đen', 'cau den',
+    'cầu trắng', 'cau trang',
+    'thủ đức', 'thu duc',
+    'bình thái', 'binh thai',
+    'nguyễn thị minh khai', 'nguyen thi minh khai',
+    'trần phú', 'tran phu',
+    'pasteur', 'hàng xanh', 'hang xanh',
+    'ngã tư ga', 'nga tu ga',
+    'chợ cầu', 'cho cau',
+    'bến xe miền đông', 'ben xe mien dong'
+  ];
+
+  const isSaigonStation = saigonStations.some(name => stationName.includes(name));
+
+  if (isSaigonStation) {
+    console.log(`[RouteMapper] "${senderStation}" → "Sài Gòn- Long Khánh" (station in SG area)`);
+    return 'Sài Gòn- Long Khánh';
+  }
+
+  // Default: Sài Gòn
+  console.log(`[RouteMapper] "${senderStation}" → "Sài Gòn- Long Khánh" (default)`);
+  return 'Sài Gòn- Long Khánh';
 }
 
 // Helper: Round time UP to next 30-minute slot
@@ -118,29 +164,98 @@ async function logProductChange(productId, action, field, oldValue, newValue, ch
   }
 }
 
-// Helper: Create TongHop booking for Dọc Đường orders (DIRECT DATABASE, NO WEBHOOK)
+// Helper: Format booking note - "giao {name} {quantity}" (matching original logic)
+function formatBookingNote(receiverName, productType, quantity) {
+  const name = receiverName || '';
+
+  // Priority 1: Use 'quantity' field if provided
+  if (quantity && quantity.trim()) {
+    return `giao ${name} ${quantity}`;
+  }
+
+  // Priority 2: Extract type name from productType and use default "1"
+  // If productType = "06 - Kiện" → extract "Kiện", return "1 Kiện"
+  const type = productType || '';
+  const match = type.match(/^(\d+)\s*-\s*(.+)$/);
+
+  if (match) {
+    const typeName = match[2].trim();
+    return `giao ${name} 1 ${typeName}`;
+  }
+
+  // If productType doesn't have number format, use as-is with "1"
+  if (type.trim()) {
+    return `giao ${name} 1 ${type.trim()}`;
+  }
+
+  // Final fallback
+  return `giao ${name} 1`;
+}
+
+// Helper: Find nearest timeslot (matching original timeslot-matcher logic)
+async function findNearestTimeslot(route, currentDate) {
+  const now = currentDate || new Date();
+  const currentHour = now.getHours();
+  const currentMinute = now.getMinutes();
+  const currentTotalMinutes = currentHour * 60 + currentMinute;
+  const todayDateStr = formatDDMMYYYY(now);
+
+  // Step 1: Find future timeslots today
+  const todaySlots = await queryTongHop(`
+    SELECT * FROM "TH_TimeSlots"
+    WHERE date = $1 AND route = $2
+    ORDER BY time ASC
+  `, [todayDateStr, route]);
+
+  // Filter to find future slots
+  for (const slot of todaySlots) {
+    const [hours, minutes] = slot.time.split(':').map(Number);
+    const slotTotalMinutes = hours * 60 + minutes;
+    if (slotTotalMinutes > currentTotalMinutes) {
+      return slot;
+    }
+  }
+
+  // Step 2: No future slots today, get first slot tomorrow
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowDateStr = formatDDMMYYYY(tomorrow);
+
+  const tomorrowSlot = await queryOneTongHop(`
+    SELECT * FROM "TH_TimeSlots"
+    WHERE date = $1 AND route = $2
+    ORDER BY time ASC
+    LIMIT 1
+  `, [tomorrowDateStr, route]);
+
+  return tomorrowSlot;
+}
+
+// Helper: Create TongHop booking for Dọc Đường orders (DIRECT DATABASE, matching original logic)
 async function createTongHopBooking(product) {
   try {
     const route = determineRoute(product.senderStation, product.station);
-    const dateStr = formatDDMMYYYY(product.sendDate);
-    const timeStr = roundToNextTimeSlot(product.sendDate);
+    const now = new Date();
 
-    console.log(`[TongHop Integration] Creating booking for ${product.id}, route=${route}, date=${dateStr}, time=${timeStr}`);
+    console.log(`[TongHop Integration] Creating booking for ${product.id}, route=${route}`);
 
-    // Find or create timeslot
-    let timeSlot = await queryOneTongHop(`
-      SELECT id FROM "TH_TimeSlots"
-      WHERE date = $1 AND time = $2 AND route = $3
-    `, [dateStr, timeStr, route]);
+    // Find nearest timeslot (future today or first tomorrow)
+    let timeSlot = await findNearestTimeslot(route, now);
 
+    // If no timeslot found, create one for current time
     if (!timeSlot) {
+      const dateStr = formatDDMMYYYY(now);
+      const timeStr = roundToNextTimeSlot(now);
+
       timeSlot = await queryOneTongHop(`
-        INSERT INTO "TH_TimeSlots" (time, date, route)
-        VALUES ($1, $2, $3)
-        RETURNING id
+        INSERT INTO "TH_TimeSlots" (time, date, route, type)
+        VALUES ($1, $2, $3, 'Xe 28G')
+        RETURNING *
       `, [timeStr, dateStr, route]);
       console.log(`[TongHop Integration] Created new timeslot: ${timeSlot.id}`);
     }
+
+    console.log(`[TongHop Integration] Using timeslot: ${timeSlot.time} on ${timeSlot.date} (ID: ${timeSlot.id})`);
 
     // Find next available seat
     const usedSeats = await queryTongHop(`
@@ -149,7 +264,7 @@ async function createTongHopBooking(product) {
     `, [timeSlot.id]);
 
     const usedSeatNumbers = usedSeats.map(s => s.seatNumber);
-    let nextSeat = 0;
+    let nextSeat = 28; // Default to last seat if all occupied
     for (let i = 1; i <= 28; i++) {
       if (!usedSeatNumbers.includes(i)) {
         nextSeat = i;
@@ -157,7 +272,12 @@ async function createTongHopBooking(product) {
       }
     }
 
-    // Create booking
+    console.log(`[TongHop Integration] Found ${usedSeats.length} existing bookings, assigned seat ${nextSeat}`);
+
+    // Format note: "giao {name} {quantity}"
+    const bookingNote = formatBookingNote(product.receiverName, product.productType, product.quantity);
+
+    // Create booking with correct format (matching original)
     const booking = await queryOneTongHop(`
       INSERT INTO "TH_Bookings" (
         "timeSlotId", phone, name, "pickupMethod", "pickupAddress",
@@ -169,20 +289,20 @@ async function createTongHopBooking(product) {
       timeSlot.id,
       product.receiverPhone || '',
       product.receiverName || '',
-      'Dọc đường',
-      product.senderStation || '',
-      'Dọc đường',
-      product.station || '',
-      `[NhapHang: ${product.id}] Xe: ${product.vehicle || ''} | SL: ${product.quantity || ''} | ${product.notes || ''}`,
+      'Tại bến',           // pickupMethod - matching original
+      'tại bến',           // pickupAddress - matching original (lowercase)
+      'Dọc đường',         // dropoffMethod
+      product.station || 'Dọc đường',  // dropoffAddress
+      bookingNote,         // Format: "giao {name} {quantity}"
       nextSeat,
-      0,
-      0,
-      timeStr,
-      dateStr,
+      parseFloat(product.totalAmount) || 0,  // amount
+      parseFloat(product.totalAmount) || 0,  // paid (already paid as freight)
+      timeSlot.time,
+      timeSlot.date,
       route
     ]);
 
-    console.log(`[TongHop Integration] Created booking: ${booking.id} with seat ${nextSeat}`);
+    console.log(`[TongHop Integration] ✅ Created booking: ${booking.id} with seat ${nextSeat}, note: "${bookingNote}"`);
     return booking.id;
 
   } catch (error) {
@@ -429,7 +549,9 @@ export async function POST(request) {
         receiverName,
         receiverPhone,
         vehicle,
+        productType,
         quantity,
+        totalAmount,
         notes,
         sendDate: sendDateTime
       });

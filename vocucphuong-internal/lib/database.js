@@ -1,8 +1,9 @@
 import { Pool } from 'pg';
 
-// Lazy initialize pools
+// Lazy initialize pools - 3 separate Neon databases
 let nhapHangPool = null;
 let tongHopPool = null;
+let datVePool = null;
 
 function getNhapHangPool() {
   if (!nhapHangPool) {
@@ -22,6 +23,16 @@ function getTongHopPool() {
     });
   }
   return tongHopPool;
+}
+
+function getDatVePool() {
+  if (!datVePool) {
+    datVePool = new Pool({
+      connectionString: process.env.DATABASE_URL_DATVE,
+      ssl: { rejectUnauthorized: false }
+    });
+  }
+  return datVePool;
 }
 
 // Nhập Hàng queries
@@ -55,6 +66,23 @@ export async function queryTongHop(sqlQuery, params = []) {
 
 export async function queryOneTongHop(sqlQuery, params = []) {
   const rows = await queryTongHop(sqlQuery, params);
+  return rows[0] || null;
+}
+
+// Đặt Vé queries
+export async function queryDatVe(sqlQuery, params = []) {
+  const pool = getDatVePool();
+  const client = await pool.connect();
+  try {
+    const result = await client.query(sqlQuery, params);
+    return result.rows;
+  } finally {
+    client.release();
+  }
+}
+
+export async function queryOneDatVe(sqlQuery, params = []) {
+  const rows = await queryDatVe(sqlQuery, params);
   return rows[0] || null;
 }
 
