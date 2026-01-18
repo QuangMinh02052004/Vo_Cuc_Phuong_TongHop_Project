@@ -49,11 +49,34 @@ function extractStationCode(fullName) {
   return match ? match[1] : '00';
 }
 
-// Helper: Check if station is "Dọc Đường"
+// Helper: Check if station is "Dọc Đường" (handles various Unicode encodings)
 function isDocDuong(stationName) {
   if (!stationName) return false;
   const lower = stationName.toLowerCase();
-  return lower.includes('dọc đường') || lower.includes('doc duong');
+
+  // Check for "00 - " prefix (station code for Dọc Đường)
+  if (lower.startsWith('00 -') || lower.startsWith('00-')) {
+    console.log(`[isDocDuong] Matched by station code: "${stationName}"`);
+    return true;
+  }
+
+  // Check for various forms of "dọc đường"
+  // Vietnamese: dọc đường, doc duong, dọc duong, doc đường
+  const patterns = [
+    'dọc đường',    // Full Vietnamese
+    'doc duong',    // ASCII
+    'dọc duong',    // Mixed
+    'doc đường',    // Mixed
+    'dọc đuong',    // Typo variation
+    'd\u1ecdc',     // Unicode: ọ = \u1ecd
+    'đường'         // Just "đường" as fallback
+  ];
+
+  const matched = patterns.some(p => lower.includes(p));
+  if (matched) {
+    console.log(`[isDocDuong] Matched pattern in: "${stationName}"`);
+  }
+  return matched;
 }
 
 // Helper: Determine route based on sender station (matching original logic)
