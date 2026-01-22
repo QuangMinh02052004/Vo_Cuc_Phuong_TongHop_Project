@@ -92,14 +92,16 @@ export async function GET(request) {
         // Nếu có filter route cụ thể, chỉ tạo cho route đó
         if (route && r !== route) continue;
 
+        const expectedTimes = getTimesForRoute(r);
         const existingCount = await queryOneTongHop(
           `SELECT COUNT(*) as count FROM "TH_TimeSlots" WHERE date = $1 AND route = $2`,
           [date, r]
         );
 
-        // Nếu chưa có timeslot nào cho ngày + route này, tạo mặc định
-        if (parseInt(existingCount?.count || '0') === 0) {
-          console.log(`[Timeslots] Không có timeslot cho ngày ${date} route "${r}", đang tạo mặc định...`);
+        // Nếu chưa đủ timeslot cho ngày + route này, tạo bổ sung
+        const currentCount = parseInt(existingCount?.count || '0');
+        if (currentCount < expectedTimes.length) {
+          console.log(`[Timeslots] Chỉ có ${currentCount}/${expectedTimes.length} timeslot cho ngày ${date} route "${r}", đang tạo bổ sung...`);
           await createDefaultTimeslots(date, r);
         }
       }
