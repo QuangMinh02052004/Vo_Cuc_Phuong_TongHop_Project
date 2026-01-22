@@ -52,46 +52,69 @@ export async function POST(request) {
   }
 }
 
-// PUT - Chuẩn hóa route names về FORMAT GỐC
+// PUT - Chuẩn hóa route names và xóa duplicates
 // FORMAT GỐC: 'Sài Gòn- Long Khánh' (KHÔNG space) và 'Long Khánh - Sài Gòn' (CÓ space)
 export async function PUT(request) {
   try {
-    // Chuẩn hóa về format gốc
-    // "Sài Gòn - Long Khánh" -> "Sài Gòn- Long Khánh" (bỏ space trước dấu gạch)
+    const results = [];
 
-    const result1 = await queryTongHop(`
-      UPDATE "TH_TimeSlots"
-      SET route = 'Sài Gòn- Long Khánh'
+    // Step 1: Đếm timeslots trước khi cleanup
+    const beforeCount = await queryTongHop('SELECT COUNT(*) as count FROM "TH_TimeSlots"');
+    results.push(`Before: ${beforeCount[0].count} timeslots`);
+
+    // Step 2: Xóa tất cả timeslots với route format SAI "Sài Gòn - Long Khánh" (có space)
+    await queryTongHop(`
+      DELETE FROM "TH_TimeSlots"
       WHERE route = 'Sài Gòn - Long Khánh'
     `);
+    results.push(`Deleted timeslots with wrong route format`);
 
-    // "Long Khánh- Sài Gòn" -> "Long Khánh - Sài Gòn" (thêm space nếu thiếu)
-    const result2 = await queryTongHop(`
-      UPDATE "TH_TimeSlots"
-      SET route = 'Long Khánh - Sài Gòn'
-      WHERE route = 'Long Khánh- Sài Gòn'
-    `);
-
-    // Cũng chuẩn hóa bookings
+    // Step 3: Chuẩn hóa bookings về đúng format
     await queryTongHop(`
       UPDATE "TH_Bookings"
       SET route = 'Sài Gòn- Long Khánh'
       WHERE route = 'Sài Gòn - Long Khánh'
     `);
+    results.push(`Normalized bookings route`);
 
+    // Step 4: XÓA DUPLICATE TIMESLOTS - giữ lại ID nhỏ nhất cho mỗi time/date/route
+    // Đây là nguyên nhân chính gây mất ô timeslot!
     await queryTongHop(`
-      UPDATE "TH_Bookings"
-      SET route = 'Long Khánh - Sài Gòn'
-      WHERE route = 'Long Khánh- Sài Gòn'
+      DELETE FROM "TH_TimeSlots"
+      WHERE id NOT IN (
+        SELECT MIN(id) FROM "TH_TimeSlots"
+        GROUP BY time, date, route
+      )
     `);
+    results.push(`Deleted duplicate timeslots (kept oldest ID)`);
+
+    // Step 5: Fix bookings có timeSlotId không hợp lệ
+    await queryTongHop(`
+      UPDATE "TH_Bookings" b
+      SET "timeSlotId" = (
+        SELECT t.id FROM "TH_TimeSlots" t
+        WHERE t.time = b."timeSlot" AND t.date = b.date AND t.route = b.route
+        LIMIT 1
+      )
+      WHERE NOT EXISTS (
+        SELECT 1 FROM "TH_TimeSlots" t WHERE t.id = b."timeSlotId"
+      )
+    `);
+    results.push(`Fixed orphan booking timeSlotIds`);
+
+    // Step 6: Đếm sau khi cleanup
+    const afterCount = await queryTongHop('SELECT COUNT(*) as count FROM "TH_TimeSlots"');
+    results.push(`After: ${afterCount[0].count} timeslots`);
 
     return NextResponse.json({
       success: true,
-      message: 'Đã chuẩn hóa route names về format gốc'
+      message: 'Đã cleanup và chuẩn hóa dữ liệu',
+      results,
+      deleted: Number(beforeCount[0].count) - Number(afterCount[0].count)
     });
 
   } catch (error) {
-    console.error('[Normalize] Error:', error);
+    console.error('[Cleanup] Error:', error);
     return NextResponse.json({
       success: false,
       error: error.message

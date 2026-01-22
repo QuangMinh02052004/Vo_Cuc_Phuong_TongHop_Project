@@ -20,6 +20,28 @@ const ROUTE_SG_LK = 'Sài Gòn- Long Khánh';
 const ROUTE_LK_SG = 'Long Khánh - Sài Gòn';
 const DEFAULT_ROUTES = [ROUTE_SG_LK, ROUTE_LK_SG];
 
+// Helper: Normalize route format to match standard
+function normalizeRoute(route) {
+  if (!route) return ROUTE_SG_LK;
+
+  const lower = route.toLowerCase();
+
+  // Check for Long Khánh - Sài Gòn direction
+  if (lower.includes('long khánh') && lower.includes('sài gòn')) {
+    if (lower.indexOf('long') < lower.indexOf('sài')) {
+      return ROUTE_LK_SG; // LK -> SG
+    }
+  }
+
+  // Check for Sài Gòn - Long Khánh direction (default)
+  if (lower.includes('sài gòn') || lower.includes('sg') || lower.includes('saigon')) {
+    return ROUTE_SG_LK;
+  }
+
+  // Default
+  return ROUTE_SG_LK;
+}
+
 // Helper: Lấy danh sách times theo route
 function getTimesForRoute(route) {
   if (route === ROUTE_LK_SG) {
@@ -59,7 +81,9 @@ export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const date = searchParams.get('date');
-    const route = searchParams.get('route');
+    const rawRoute = searchParams.get('route');
+    // Normalize route format to prevent duplicates
+    const route = rawRoute ? normalizeRoute(rawRoute) : null;
 
     // Nếu có date, kiểm tra và tạo timeslots mặc định nếu cần
     if (date) {
@@ -112,13 +136,15 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { time, date, route, type, code, driver, phone } = body;
+    const { time, date, route: rawRoute, type, code, driver, phone } = body;
+    // Normalize route format to prevent duplicates
+    const route = normalizeRoute(rawRoute);
 
     // Kiểm tra xem time slot đã tồn tại chưa
     const existing = await queryOneTongHop(`
       SELECT * FROM "TH_TimeSlots"
       WHERE time = $1 AND date = $2 AND route = $3
-    `, [time, date, route || '']);
+    `, [time, date, route]);
 
     if (existing) {
       // Đã tồn tại, trả về slot hiện có
@@ -131,7 +157,7 @@ export async function POST(request) {
       INSERT INTO "TH_TimeSlots" (time, date, route, type, code, driver, phone)
       VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING *
-    `, [time, date, route || '', type || 'Xe 28G', code || '', driver || '', phone || '']);
+    `, [time, date, route, type || 'Xe 28G', code || '', driver || '', phone || '']);
 
     console.log(`Đã tạo TimeSlot mới: ${time} ${date} ${route} (ID: ${result[0].id})`);
     return NextResponse.json(result[0], { status: 201 });
