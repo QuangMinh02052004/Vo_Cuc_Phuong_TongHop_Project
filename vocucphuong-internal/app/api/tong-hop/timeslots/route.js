@@ -124,7 +124,9 @@ export async function GET(request) {
       paramIndex++;
     }
 
-    sqlQuery += ' ORDER BY time ASC LIMIT 200';
+    // Nếu có date filter thì limit 200, nếu không thì cần load nhiều hơn cho frontend
+    const limit = date ? 200 : 10000;
+    sqlQuery += ` ORDER BY date DESC, time ASC LIMIT ${limit}`;
 
     const timeSlots = await queryTongHop(sqlQuery, params);
     return NextResponse.json(timeSlots);
