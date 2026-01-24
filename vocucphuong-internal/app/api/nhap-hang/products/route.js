@@ -531,11 +531,22 @@ export async function POST(request) {
 
       // The hour in parsed is Vietnam time, need to subtract 7 to get UTC
       sendDateTime = new Date(parsed.getTime() - (7 * 60 * 60 * 1000));
-      console.log(`[POST] sendDate from frontend: ${sendDate} → Vietnam: ${dateStr} → UTC: ${sendDateTime.toISOString()}`);
+
+      // Debug: Show Vietnam time interpretation
+      const vnTime = getVietnamTime(sendDateTime);
+      console.log(`[POST] ===== TIMEZONE DEBUG =====`);
+      console.log(`[POST] Raw sendDate from frontend: "${sendDate}"`);
+      console.log(`[POST] Stripped timezone: "${dateStr}"`);
+      console.log(`[POST] Parsed (interpreted as local): ${parsed.toISOString()}`);
+      console.log(`[POST] After -7h (stored as UTC): ${sendDateTime.toISOString()}`);
+      console.log(`[POST] Vietnam display time: ${String(vnTime.hours).padStart(2,'0')}:${String(vnTime.minutes).padStart(2,'0')}`);
+      console.log(`[POST] Vietnam date: ${formatDDMMYYYY(sendDateTime)}`);
+      console.log(`[POST] =============================`);
     } else {
       // No sendDate provided, use current server time (already UTC)
       sendDateTime = new Date();
-      console.log(`[POST] No sendDate, using server UTC: ${sendDateTime.toISOString()}`);
+      const vnTime = getVietnamTime(sendDateTime);
+      console.log(`[POST] No sendDate, using server UTC: ${sendDateTime.toISOString()}, Vietnam: ${vnTime.hours}:${vnTime.minutes}`);
     }
 
     const dateKey = formatDateKey(sendDateTime);
