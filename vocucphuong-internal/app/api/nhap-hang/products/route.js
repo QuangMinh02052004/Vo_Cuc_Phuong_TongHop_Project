@@ -518,7 +518,31 @@ export async function POST(request) {
 
     // Generate product ID
     const stationCode = extractStationCode(senderStation);
-    const sendDateTime = sendDate ? new Date(sendDate) : new Date();
+
+    // ✅ FIX: Handle timezone properly
+    // Frontend sends Vietnam local time (without 'Z' suffix)
+    // Server needs to convert to UTC by SUBTRACTING 7 hours
+    let sendDateTime;
+    if (sendDate) {
+      const parsed = new Date(sendDate);
+      // Check if sendDate already has timezone info (contains 'Z' or '+' or '-' after time)
+      const hasTimezone = typeof sendDate === 'string' && (sendDate.includes('Z') || /[+-]\d{2}:\d{2}$/.test(sendDate));
+
+      if (hasTimezone) {
+        // Already has timezone, use as-is
+        sendDateTime = parsed;
+        console.log(`[POST] sendDate has timezone: ${sendDate} → ${sendDateTime.toISOString()}`);
+      } else {
+        // No timezone = Vietnam local time, SUBTRACT 7 hours to get UTC
+        sendDateTime = new Date(parsed.getTime() - (7 * 60 * 60 * 1000));
+        console.log(`[POST] sendDate is Vietnam time: ${sendDate} → UTC: ${sendDateTime.toISOString()}`);
+      }
+    } else {
+      // No sendDate provided, use current server time (already UTC)
+      sendDateTime = new Date();
+      console.log(`[POST] No sendDate, using server UTC: ${sendDateTime.toISOString()}`);
+    }
+
     const dateKey = formatDateKey(sendDateTime);
     const counterKey = `counter_${stationCode}_${dateKey}`;
 
