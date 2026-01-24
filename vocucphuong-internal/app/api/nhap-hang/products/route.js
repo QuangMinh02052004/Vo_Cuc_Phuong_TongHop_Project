@@ -520,23 +520,17 @@ export async function POST(request) {
     const stationCode = extractStationCode(senderStation);
 
     // ✅ FIX: Handle timezone properly
-    // Frontend sends Vietnam local time (without 'Z' suffix)
+    // Frontend ALWAYS sends Vietnam local time (even if it has 'Z' suffix)
     // Server needs to convert to UTC by SUBTRACTING 7 hours
     let sendDateTime;
     if (sendDate) {
-      const parsed = new Date(sendDate);
-      // Check if sendDate already has timezone info (contains 'Z' or '+' or '-' after time)
-      const hasTimezone = typeof sendDate === 'string' && (sendDate.includes('Z') || /[+-]\d{2}:\d{2}$/.test(sendDate));
+      // Parse the date - extract just the datetime part, ignore timezone
+      const dateStr = String(sendDate).replace('Z', '').replace(/[+-]\d{2}:\d{2}$/, '');
+      const parsed = new Date(dateStr);
 
-      if (hasTimezone) {
-        // Already has timezone, use as-is
-        sendDateTime = parsed;
-        console.log(`[POST] sendDate has timezone: ${sendDate} → ${sendDateTime.toISOString()}`);
-      } else {
-        // No timezone = Vietnam local time, SUBTRACT 7 hours to get UTC
-        sendDateTime = new Date(parsed.getTime() - (7 * 60 * 60 * 1000));
-        console.log(`[POST] sendDate is Vietnam time: ${sendDate} → UTC: ${sendDateTime.toISOString()}`);
-      }
+      // The hour in parsed is Vietnam time, need to subtract 7 to get UTC
+      sendDateTime = new Date(parsed.getTime() - (7 * 60 * 60 * 1000));
+      console.log(`[POST] sendDate from frontend: ${sendDate} → Vietnam: ${dateStr} → UTC: ${sendDateTime.toISOString()}`);
     } else {
       // No sendDate provided, use current server time (already UTC)
       sendDateTime = new Date();
