@@ -107,8 +107,13 @@ export async function GET(request) {
       }
     }
 
-    // Query timeslots
-    let sqlQuery = 'SELECT * FROM "TH_TimeSlots" WHERE 1=1';
+    // Query timeslots - SỬ DỤNG DISTINCT ON để loại bỏ duplicate
+    // Giữ lại record có ID nhỏ nhất (cũ nhất) cho mỗi time+date+route
+    let sqlQuery = `
+      SELECT DISTINCT ON (time, date, route) *
+      FROM "TH_TimeSlots"
+      WHERE 1=1
+    `;
     const params = [];
     let paramIndex = 1;
 
@@ -124,11 +129,19 @@ export async function GET(request) {
       paramIndex++;
     }
 
-    // Nếu có date filter thì limit 200, nếu không thì cần load nhiều hơn cho frontend
-    const limit = date ? 200 : 10000;
-    sqlQuery += ` ORDER BY date DESC, time ASC LIMIT ${limit}`;
+    // Order by time, date, route TRƯỚC (cho DISTINCT ON), rồi mới id (để chọn cái cũ nhất)
+    // Sau đó order lại theo date DESC, time ASC cho output
+    sqlQuery += ` ORDER BY time, date, route, id ASC`;
 
-    const timeSlots = await queryTongHop(sqlQuery, params);
+    // Wrap trong subquery để có thể order lại
+    const limit = date ? 200 : 10000;
+    const finalQuery = `
+      SELECT * FROM (${sqlQuery}) AS deduped
+      ORDER BY date DESC, time ASC
+      LIMIT ${limit}
+    `;
+
+    const timeSlots = await queryTongHop(finalQuery, params);
     return NextResponse.json(timeSlots);
   } catch (error) {
     console.error('Error fetching timeslots:', error);
