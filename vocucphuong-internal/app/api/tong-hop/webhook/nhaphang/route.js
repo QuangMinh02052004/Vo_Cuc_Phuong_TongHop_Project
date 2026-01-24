@@ -6,14 +6,13 @@ import { NextResponse } from 'next/server';
 // ===========================================
 // POST /api/tong-hop/webhook/nhaphang
 
-// Helper: Format date DD-MM-YYYY (using Vietnam time UTC+7)
+// Helper: Format date DD-MM-YYYY
+// Giờ đã lưu trực tiếp là Vietnam time, không cần convert
 function formatDate(dateStr) {
   const d = new Date(dateStr);
-  // ✅ FIX: Use Vietnam timezone (UTC+7) for date calculation
-  const vnDate = new Date(d.getTime() + (7 * 60 * 60 * 1000));
-  const day = String(vnDate.getUTCDate()).padStart(2, '0');
-  const month = String(vnDate.getUTCMonth() + 1).padStart(2, '0');
-  const year = vnDate.getUTCFullYear();
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
   return `${day}-${month}-${year}`;
 }
 
@@ -46,19 +45,15 @@ function determineRoute(senderStation, receiverStation) {
 // Helper: Xác định khung giờ từ sendDate hoặc vehicle
 // Làm tròn LÊN đến khung giờ tiếp theo (30 phút)
 // Ví dụ: 20:36 → 21:00, 20:15 → 20:30
-// Sử dụng UTC+7 (Vietnam timezone)
+// Giờ đã là Vietnam time, đọc trực tiếp
 function determineTimeSlot(sendDate, vehicle) {
   // Nếu có sendDate, lấy giờ từ đó
   if (sendDate) {
     const d = new Date(sendDate);
-    // Chuyển sang giờ Việt Nam (UTC+7)
-    let hours = d.getUTCHours() + 7;
-    let minutes = d.getUTCMinutes();
+    let hours = d.getHours();
+    let minutes = d.getMinutes();
 
-    // Xử lý overflow (qua ngày)
-    if (hours >= 24) hours -= 24;
-
-    console.log(`[determineTimeSlot] Input: ${sendDate}, UTC: ${d.getUTCHours()}:${d.getUTCMinutes()}, Vietnam: ${hours}:${minutes}`);
+    console.log(`[determineTimeSlot] Input: ${sendDate}, Time: ${hours}:${minutes}`);
 
     // Làm tròn LÊN đến slot tiếp theo (30 phút)
     // 00-29 phút → :30 cùng giờ

@@ -25,15 +25,13 @@ function formatYYMMDD(date) {
   return `${year}${month}${day}`;
 }
 
-// Helper: Format date to DD-MM-YYYY for TongHop (using Vietnam time UTC+7)
+// Helper: Format date to DD-MM-YYYY for TongHop
+// Giờ đã lưu trực tiếp là Vietnam time, không cần convert
 function formatDDMMYYYY(date) {
   const d = new Date(date);
-  // ✅ FIX: Use Vietnam timezone (UTC+7) for date calculation
-  // Create a date object adjusted for Vietnam timezone
-  const vnDate = new Date(d.getTime() + (7 * 60 * 60 * 1000)); // Add 7 hours in ms
-  const day = String(vnDate.getUTCDate()).padStart(2, '0');
-  const month = String(vnDate.getUTCMonth() + 1).padStart(2, '0');
-  const year = vnDate.getUTCFullYear();
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
   return `${day}-${month}-${year}`;
 }
 
@@ -145,17 +143,14 @@ function determineRoute(senderStation, receiverStation) {
   return 'Sài Gòn- Long Khánh';
 }
 
-// Helper: Round time UP to next 30-minute slot (using Vietnam time)
+// Helper: Làm tròn LÊN đến khung giờ 30 phút tiếp theo
+// Date đã là Vietnam time, đọc trực tiếp
 function roundToNextTimeSlot(date) {
   const d = new Date(date);
-  // ✅ FIX: Use Vietnam time (UTC+7)
-  let hours = d.getUTCHours() + 7;
-  let minutes = d.getUTCMinutes();
+  let hours = d.getHours();
+  let minutes = d.getMinutes();
 
-  // Handle day overflow
-  if (hours >= 24) hours -= 24;
-
-  console.log(`[roundToNextTimeSlot] UTC: ${d.getUTCHours()}:${d.getUTCMinutes()}, Vietnam: ${hours}:${minutes}`);
+  console.log(`[roundToNextTimeSlot] Input: ${hours}:${minutes}`);
 
   if (minutes === 0 || minutes === 30) {
     return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
@@ -224,31 +219,24 @@ function formatBookingNote(receiverName, productType, quantity) {
   return `giao ${name} 1`;
 }
 
-// Helper: Get Vietnam time (UTC+7)
-function getVietnamTime(date) {
+// Helper: Lấy giờ phút từ date (đã là Vietnam time)
+function getTimeFromDate(date) {
   const d = date || new Date();
-  // Add 7 hours for Vietnam timezone
-  let hours = d.getUTCHours() + 7;
-  let minutes = d.getUTCMinutes();
-
-  // Handle day overflow
-  if (hours >= 24) {
-    hours -= 24;
-  }
-
+  const hours = d.getHours();
+  const minutes = d.getMinutes();
   return { hours, minutes, totalMinutes: hours * 60 + minutes };
 }
 
 // Helper: Find nearest timeslot (matching original timeslot-matcher logic)
+// Date đã là Vietnam time, đọc trực tiếp
 async function findNearestTimeslot(route, currentDate) {
   const now = currentDate || new Date();
-  // ✅ FIX: Use Vietnam time (UTC+7) instead of server local time
-  const vnTime = getVietnamTime(now);
-  const currentHour = vnTime.hours;
-  const currentMinute = vnTime.minutes;
-  const currentTotalMinutes = vnTime.totalMinutes;
+  const timeInfo = getTimeFromDate(now);
+  const currentHour = timeInfo.hours;
+  const currentMinute = timeInfo.minutes;
+  const currentTotalMinutes = timeInfo.totalMinutes;
 
-  console.log(`[findNearestTimeslot] UTC: ${now.getUTCHours()}:${now.getUTCMinutes()}, Vietnam: ${currentHour}:${currentMinute}`);
+  console.log(`[findNearestTimeslot] Time: ${currentHour}:${currentMinute}`);
 
   const todayDateStr = formatDDMMYYYY(now);
 
@@ -520,33 +508,20 @@ export async function POST(request) {
     // Generate product ID
     const stationCode = extractStationCode(senderStation);
 
-    // ✅ FIX: Handle timezone properly
-    // Frontend ALWAYS sends Vietnam local time (even if it has 'Z' suffix)
-    // Server needs to convert to UTC by SUBTRACTING 7 hours
+    // ✅ SIMPLE FIX: Giữ nguyên giờ Vietnam, không cần convert
+    // Frontend gửi 20:47 → Server lưu 20:47 → Hiển thị 20:47
     let sendDateTime;
     if (sendDate) {
-      // Parse the date - extract just the datetime part, ignore timezone
+      // Bỏ Z suffix nếu có, giữ nguyên giờ
       const dateStr = String(sendDate).replace('Z', '').replace(/[+-]\d{2}:\d{2}$/, '');
-      const parsed = new Date(dateStr);
-
-      // The hour in parsed is Vietnam time, need to subtract 7 to get UTC
-      sendDateTime = new Date(parsed.getTime() - (7 * 60 * 60 * 1000));
-
-      // Debug: Show Vietnam time interpretation
-      const vnTime = getVietnamTime(sendDateTime);
-      console.log(`[POST] ===== TIMEZONE DEBUG =====`);
-      console.log(`[POST] Raw sendDate from frontend: "${sendDate}"`);
-      console.log(`[POST] Stripped timezone: "${dateStr}"`);
-      console.log(`[POST] Parsed (interpreted as local): ${parsed.toISOString()}`);
-      console.log(`[POST] After -7h (stored as UTC): ${sendDateTime.toISOString()}`);
-      console.log(`[POST] Vietnam display time: ${String(vnTime.hours).padStart(2,'0')}:${String(vnTime.minutes).padStart(2,'0')}`);
-      console.log(`[POST] Vietnam date: ${formatDDMMYYYY(sendDateTime)}`);
-      console.log(`[POST] =============================`);
+      sendDateTime = new Date(dateStr);
+      console.log(`[POST] sendDate: "${sendDate}" → stored as: ${sendDateTime.toISOString()}`);
     } else {
-      // No sendDate provided, use current server time (already UTC)
-      sendDateTime = new Date();
-      const vnTime = getVietnamTime(sendDateTime);
-      console.log(`[POST] No sendDate, using server UTC: ${sendDateTime.toISOString()}, Vietnam: ${vnTime.hours}:${vnTime.minutes}`);
+      // Không có sendDate → dùng giờ Vietnam hiện tại
+      const now = new Date();
+      // Server chạy UTC, cộng 7h để có giờ Vietnam
+      sendDateTime = new Date(now.getTime() + (7 * 60 * 60 * 1000));
+      console.log(`[POST] No sendDate, using Vietnam time: ${sendDateTime.toISOString()}`);
     }
 
     const dateKey = formatDateKey(sendDateTime);
