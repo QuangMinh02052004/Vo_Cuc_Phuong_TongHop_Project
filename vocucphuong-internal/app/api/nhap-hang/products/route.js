@@ -287,9 +287,10 @@ async function findNearestTimeslot(route, currentDate) {
 async function createTongHopBooking(product) {
   try {
     const route = determineRoute(product.senderStation, product.station);
-    const now = new Date();
+    // ✅ FIX: Use product's sendDate (already in UTC), NOT current server time!
+    const now = product.sendDate ? new Date(product.sendDate) : new Date();
 
-    console.log(`[TongHop Integration] Creating booking for ${product.id}, route=${route}`);
+    console.log(`[TongHop Integration] Creating booking for ${product.id}, route=${route}, sendDate=${now.toISOString()}`);
 
     // Find nearest timeslot (future today or first tomorrow)
     let timeSlot = await findNearestTimeslot(route, now);
