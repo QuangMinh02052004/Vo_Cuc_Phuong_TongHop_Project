@@ -511,17 +511,21 @@ export async function POST(request) {
     // ✅ SIMPLE FIX: Giữ nguyên giờ Vietnam, không cần convert
     // Frontend gửi 20:47 → Server lưu 20:47 → Hiển thị 20:47
     let sendDateTime;
+    let sendDateString; // Lưu dạng string không có timezone
+
     if (sendDate) {
-      // Bỏ Z suffix nếu có, giữ nguyên giờ
-      const dateStr = String(sendDate).replace('Z', '').replace(/[+-]\d{2}:\d{2}$/, '');
-      sendDateTime = new Date(dateStr);
-      console.log(`[POST] sendDate: "${sendDate}" → stored as: ${sendDateTime.toISOString()}`);
+      // Bỏ Z suffix và timezone, giữ nguyên giờ Vietnam
+      sendDateString = String(sendDate).replace('Z', '').replace(/[+-]\d{2}:\d{2}$/, '');
+      sendDateTime = new Date(sendDateString);
+      console.log(`[POST] sendDate: "${sendDate}" → stored as: "${sendDateString}"`);
     } else {
       // Không có sendDate → dùng giờ Vietnam hiện tại
       const now = new Date();
-      // Server chạy UTC, cộng 7h để có giờ Vietnam
-      sendDateTime = new Date(now.getTime() + (7 * 60 * 60 * 1000));
-      console.log(`[POST] No sendDate, using Vietnam time: ${sendDateTime.toISOString()}`);
+      const vnTime = new Date(now.getTime() + (7 * 60 * 60 * 1000));
+      // Format thủ công không có Z
+      sendDateString = vnTime.toISOString().replace('Z', '');
+      sendDateTime = vnTime;
+      console.log(`[POST] No sendDate, using Vietnam time: "${sendDateString}"`);
     }
 
     const dateKey = formatDateKey(sendDateTime);
@@ -577,7 +581,7 @@ export async function POST(request) {
       employee || null,
       createdBy || null,
       notes || null,
-      sendDateTime.toISOString()
+      sendDateString  // Không có Z suffix để PostgreSQL không convert timezone
     ]);
 
     const product = result[0];
