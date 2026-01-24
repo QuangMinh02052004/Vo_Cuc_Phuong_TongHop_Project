@@ -149,7 +149,7 @@ export async function GET(request) {
   }
 }
 
-// POST /api/tong-hop/timeslots - Tạo mới hoặc trả về slot đã tồn tại
+// POST /api/tong-hop/timeslots - Tạo mới hoặc trả về slot đã tồn tại (UPSERT)
 export async function POST(request) {
   try {
     const body = await request.json();
@@ -157,29 +157,36 @@ export async function POST(request) {
     // Normalize route format to prevent duplicates
     const route = normalizeRoute(rawRoute);
 
-    // Kiểm tra xem time slot đã tồn tại chưa
-    const existing = await queryOneTongHop(`
-      SELECT * FROM "TH_TimeSlots"
-      WHERE time = $1 AND date = $2 AND route = $3
-    `, [time, date, route]);
-
-    if (existing) {
-      // Đã tồn tại, trả về slot hiện có
-      console.log(`TimeSlot ${time} ${date} ${route} đã tồn tại, trả về slot hiện có (ID: ${existing.id})`);
-      return NextResponse.json(existing, { status: 200 });
-    }
-
-    // Chưa tồn tại, tạo mới
+    // Sử dụng UPSERT để tránh race condition và đảm bảo không duplicate
+    // ON CONFLICT DO UPDATE để luôn trả về dữ liệu mới nhất
     const result = await queryTongHop(`
       INSERT INTO "TH_TimeSlots" (time, date, route, type, code, driver, phone)
       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      ON CONFLICT (date, time, route) DO UPDATE SET
+        type = COALESCE(EXCLUDED.type, "TH_TimeSlots".type),
+        code = COALESCE(EXCLUDED.code, "TH_TimeSlots".code),
+        driver = COALESCE(EXCLUDED.driver, "TH_TimeSlots".driver),
+        phone = COALESCE(EXCLUDED.phone, "TH_TimeSlots".phone)
       RETURNING *
     `, [time, date, route, type || 'Xe 28G', code || '', driver || '', phone || '']);
 
-    console.log(`Đã tạo TimeSlot mới: ${time} ${date} ${route} (ID: ${result[0].id})`);
-    return NextResponse.json(result[0], { status: 201 });
+    const timeslot = result[0];
+    console.log(`[Timeslots] UPSERT: ${time} ${date} ${route} (ID: ${timeslot.id})`);
+    return NextResponse.json(timeslot, { status: 201 });
   } catch (error) {
     console.error('Error creating timeslot:', error);
+    // Nếu lỗi unique constraint (race condition), thử lấy existing
+    if (error.code === '23505') {
+      const body = await request.clone().json();
+      const route = normalizeRoute(body.route);
+      const existing = await queryOneTongHop(`
+        SELECT * FROM "TH_TimeSlots"
+        WHERE time = $1 AND date = $2 AND route = $3
+      `, [body.time, body.date, route]);
+      if (existing) {
+        return NextResponse.json(existing, { status: 200 });
+      }
+    }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

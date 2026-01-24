@@ -30,9 +30,26 @@ export async function POST(request) {
 
     const deleted = Number(beforeCount[0].count) - Number(afterCount[0].count);
 
+    // 4. Tạo unique constraint nếu chưa có (ngăn duplicate trong tương lai)
+    try {
+      await queryTongHop(`
+        ALTER TABLE "TH_TimeSlots"
+        ADD CONSTRAINT unique_timeslot_date_time_route
+        UNIQUE (date, time, route)
+      `);
+      console.log('[Cleanup] Added unique constraint on (date, time, route)');
+    } catch (constraintError) {
+      // Constraint có thể đã tồn tại
+      if (!constraintError.message.includes('already exists')) {
+        console.error('[Cleanup] Constraint error:', constraintError.message);
+      } else {
+        console.log('[Cleanup] Unique constraint already exists');
+      }
+    }
+
     return NextResponse.json({
       success: true,
-      message: `Đã xóa ${deleted} duplicate timeslots`,
+      message: `Đã xóa ${deleted} duplicate timeslots và thêm unique constraint`,
       before: Number(beforeCount[0].count),
       after: Number(afterCount[0].count),
       deleted
