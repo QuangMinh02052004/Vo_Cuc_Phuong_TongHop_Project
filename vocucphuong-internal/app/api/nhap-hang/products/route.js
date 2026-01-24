@@ -25,12 +25,15 @@ function formatYYMMDD(date) {
   return `${year}${month}${day}`;
 }
 
-// Helper: Format date to DD-MM-YYYY for TongHop
+// Helper: Format date to DD-MM-YYYY for TongHop (using Vietnam time UTC+7)
 function formatDDMMYYYY(date) {
   const d = new Date(date);
-  const day = String(d.getDate()).padStart(2, '0');
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const year = d.getFullYear();
+  // ✅ FIX: Use Vietnam timezone (UTC+7) for date calculation
+  // Create a date object adjusted for Vietnam timezone
+  const vnDate = new Date(d.getTime() + (7 * 60 * 60 * 1000)); // Add 7 hours in ms
+  const day = String(vnDate.getUTCDate()).padStart(2, '0');
+  const month = String(vnDate.getUTCMonth() + 1).padStart(2, '0');
+  const year = vnDate.getUTCFullYear();
   return `${day}-${month}-${year}`;
 }
 
@@ -142,11 +145,17 @@ function determineRoute(senderStation, receiverStation) {
   return 'Sài Gòn- Long Khánh';
 }
 
-// Helper: Round time UP to next 30-minute slot
+// Helper: Round time UP to next 30-minute slot (using Vietnam time)
 function roundToNextTimeSlot(date) {
   const d = new Date(date);
-  const minutes = d.getMinutes();
-  const hours = d.getHours();
+  // ✅ FIX: Use Vietnam time (UTC+7)
+  let hours = d.getUTCHours() + 7;
+  let minutes = d.getUTCMinutes();
+
+  // Handle day overflow
+  if (hours >= 24) hours -= 24;
+
+  console.log(`[roundToNextTimeSlot] UTC: ${d.getUTCHours()}:${d.getUTCMinutes()}, Vietnam: ${hours}:${minutes}`);
 
   if (minutes === 0 || minutes === 30) {
     return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
@@ -215,12 +224,32 @@ function formatBookingNote(receiverName, productType, quantity) {
   return `giao ${name} 1`;
 }
 
+// Helper: Get Vietnam time (UTC+7)
+function getVietnamTime(date) {
+  const d = date || new Date();
+  // Add 7 hours for Vietnam timezone
+  let hours = d.getUTCHours() + 7;
+  let minutes = d.getUTCMinutes();
+
+  // Handle day overflow
+  if (hours >= 24) {
+    hours -= 24;
+  }
+
+  return { hours, minutes, totalMinutes: hours * 60 + minutes };
+}
+
 // Helper: Find nearest timeslot (matching original timeslot-matcher logic)
 async function findNearestTimeslot(route, currentDate) {
   const now = currentDate || new Date();
-  const currentHour = now.getHours();
-  const currentMinute = now.getMinutes();
-  const currentTotalMinutes = currentHour * 60 + currentMinute;
+  // ✅ FIX: Use Vietnam time (UTC+7) instead of server local time
+  const vnTime = getVietnamTime(now);
+  const currentHour = vnTime.hours;
+  const currentMinute = vnTime.minutes;
+  const currentTotalMinutes = vnTime.totalMinutes;
+
+  console.log(`[findNearestTimeslot] UTC: ${now.getUTCHours()}:${now.getUTCMinutes()}, Vietnam: ${currentHour}:${currentMinute}`);
+
   const todayDateStr = formatDDMMYYYY(now);
 
   // Step 1: Find future timeslots today
