@@ -50,6 +50,27 @@ function extractStationCode(fullName) {
   return match ? match[1] : '00';
 }
 
+// Helper: Convert sendDate to string without timezone (để frontend không bị convert)
+function sanitizeSendDate(product) {
+  if (product && product.sendDate) {
+    // Nếu là Date object, convert thành string không có Z
+    if (product.sendDate instanceof Date) {
+      const d = product.sendDate;
+      const year = d.getUTCFullYear();
+      const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(d.getUTCDate()).padStart(2, '0');
+      const hours = String(d.getUTCHours()).padStart(2, '0');
+      const minutes = String(d.getUTCMinutes()).padStart(2, '0');
+      const seconds = String(d.getUTCSeconds()).padStart(2, '0');
+      product.sendDate = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+    } else if (typeof product.sendDate === 'string') {
+      // Nếu đã là string, bỏ Z suffix
+      product.sendDate = product.sendDate.replace('Z', '').replace(/[+-]\d{2}:\d{2}$/, '');
+    }
+  }
+  return product;
+}
+
 // Helper: Check if station is "Dọc Đường" (handles various Unicode encodings)
 function isDocDuong(stationName) {
   if (!stationName) return false;
@@ -453,11 +474,14 @@ export async function GET(request) {
 
     const countResult = await queryOneNhapHang(countQuery, countParams);
 
+    // Sanitize sendDate cho tất cả products
+    const sanitizedProducts = products.map(p => sanitizeSendDate({ ...p }));
+
     return NextResponse.json({
       success: true,
-      data: products,
-      products, // Backward compatibility
-      count: products.length,
+      data: sanitizedProducts,
+      products: sanitizedProducts, // Backward compatibility
+      count: sanitizedProducts.length,
       total: parseInt(countResult.total),
       limit,
       offset
@@ -631,11 +655,14 @@ export async function POST(request) {
       }
     }
 
+    // Sanitize sendDate để không có Z suffix
+    const sanitizedProduct = sanitizeSendDate({ ...product });
+
     return NextResponse.json({
       success: true,
       message: 'Tạo đơn hàng thành công!',
-      data: product,
-      product, // Backward compatibility
+      data: sanitizedProduct,
+      product: sanitizedProduct, // Backward compatibility
       tongHopBookingId
     }, { status: 201 });
 

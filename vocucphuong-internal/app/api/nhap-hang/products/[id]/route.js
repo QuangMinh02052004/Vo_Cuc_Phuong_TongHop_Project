@@ -16,6 +16,25 @@ function getClientIP(request) {
          null;
 }
 
+// Helper: Convert sendDate to string without timezone (để frontend không bị convert)
+function sanitizeSendDate(product) {
+  if (product && product.sendDate) {
+    if (product.sendDate instanceof Date) {
+      const d = product.sendDate;
+      const year = d.getUTCFullYear();
+      const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(d.getUTCDate()).padStart(2, '0');
+      const hours = String(d.getUTCHours()).padStart(2, '0');
+      const minutes = String(d.getUTCMinutes()).padStart(2, '0');
+      const seconds = String(d.getUTCSeconds()).padStart(2, '0');
+      product.sendDate = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+    } else if (typeof product.sendDate === 'string') {
+      product.sendDate = product.sendDate.replace('Z', '').replace(/[+-]\d{2}:\d{2}$/, '');
+    }
+  }
+  return product;
+}
+
 // Helper: Ghi log thay đổi
 async function logProductChange(productId, action, field, oldValue, newValue, changedBy, ipAddress) {
   try {
@@ -61,10 +80,13 @@ export async function GET(request, { params }) {
       LIMIT 50
     `, [id]);
 
+    // Sanitize sendDate để không có Z suffix
+    const sanitizedProduct = sanitizeSendDate({ ...product });
+
     return NextResponse.json({
       success: true,
-      data: product,
-      product, // Backward compatibility
+      data: sanitizedProduct,
+      product: sanitizedProduct, // Backward compatibility
       logs
     });
 
@@ -167,11 +189,14 @@ export async function PUT(request, { params }) {
       );
     }
 
+    // Sanitize sendDate
+    const sanitizedProduct = sanitizeSendDate({ ...updatedProduct });
+
     return NextResponse.json({
       success: true,
       message: 'Cập nhật thành công!',
-      data: updatedProduct,
-      product: updatedProduct
+      data: sanitizedProduct,
+      product: sanitizedProduct
     });
 
   } catch (error) {
