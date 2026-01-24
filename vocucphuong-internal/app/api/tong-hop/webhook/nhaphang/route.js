@@ -6,12 +6,14 @@ import { NextResponse } from 'next/server';
 // ===========================================
 // POST /api/tong-hop/webhook/nhaphang
 
-// Helper: Format date DD-MM-YYYY
+// Helper: Format date DD-MM-YYYY (using Vietnam time UTC+7)
 function formatDate(dateStr) {
   const d = new Date(dateStr);
-  const day = String(d.getDate()).padStart(2, '0');
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const year = d.getFullYear();
+  // ✅ FIX: Use Vietnam timezone (UTC+7) for date calculation
+  const vnDate = new Date(d.getTime() + (7 * 60 * 60 * 1000));
+  const day = String(vnDate.getUTCDate()).padStart(2, '0');
+  const month = String(vnDate.getUTCMonth() + 1).padStart(2, '0');
+  const year = vnDate.getUTCFullYear();
   return `${day}-${month}-${year}`;
 }
 
