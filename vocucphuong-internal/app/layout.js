@@ -1,3 +1,4 @@
+// Force Vercel redeploy v3
 export const metadata = {
   title: 'Võ Cực Phương - Quản Lý Nội Bộ',
   description: 'Hệ thống quản lý nội bộ công ty TNHH Võ Cực Phương',
