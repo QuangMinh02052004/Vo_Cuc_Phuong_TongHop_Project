@@ -1,4 +1,5 @@
 import { queryNhapHang, queryOneNhapHang, queryTongHop, queryOneTongHop } from '../../../../lib/database';
+import { extractAddressFromName, extractNameOnly } from '../../../../lib/stations';
 import { NextResponse } from 'next/server';
 
 // ===========================================
@@ -336,8 +337,19 @@ async function createTongHopBooking(product) {
 
     console.log(`[TongHop Integration] Found ${usedSeats.length} existing bookings, assigned seat ${nextSeat}`);
 
+    // === Parse viết tắt từ receiverName ===
+    const matchResult = extractAddressFromName(product.receiverName);
+    const cleanName = matchResult
+      ? extractNameOnly(product.receiverName, matchResult.matchedText)
+      : (product.receiverName || '');
+    const dropoffAddress = matchResult
+      ? `${matchResult.stt}. ${matchResult.stationName}`
+      : (product.station || 'Dọc đường');
+
+    console.log(`[TongHop Integration] Address match: ${matchResult ? `${matchResult.stt}. ${matchResult.stationName}` : 'none'}, Clean name: "${cleanName}"`);
+
     // Format note: "giao {name} {quantity}"
-    const bookingNote = formatBookingNote(product.receiverName, product.productType, product.quantity);
+    const bookingNote = formatBookingNote(cleanName, product.productType, product.quantity);
 
     // Create booking with correct format (matching original)
     const booking = await queryOneTongHop(`
@@ -350,12 +362,12 @@ async function createTongHopBooking(product) {
     `, [
       timeSlot.id,
       product.receiverPhone || '',
-      product.receiverName || '',
+      cleanName,              // Tên đã bỏ phần viết tắt
       'Tại bến',           // pickupMethod - matching original
       'tại bến',           // pickupAddress - matching original (lowercase)
       'Dọc đường',         // dropoffMethod
-      product.station || 'Dọc đường',  // dropoffAddress
-      bookingNote,         // Format: "giao {name} {quantity}"
+      dropoffAddress,      // Điểm trả đã match (vd: "54. Trà Cổ")
+      bookingNote,         // Format: "giao {cleanName} {quantity}"
       nextSeat,
       parseFloat(product.totalAmount) || 0,  // amount
       parseFloat(product.totalAmount) || 0,  // paid (already paid as freight)
