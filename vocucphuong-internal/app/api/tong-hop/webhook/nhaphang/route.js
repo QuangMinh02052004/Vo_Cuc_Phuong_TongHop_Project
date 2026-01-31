@@ -1,4 +1,5 @@
 import { queryTongHop, queryOneTongHop } from '../../../../../lib/database';
+import { extractAddressFromName, extractNameOnly } from '../../../../../lib/stations';
 import { NextResponse } from 'next/server';
 
 // ===========================================
@@ -156,6 +157,17 @@ export async function POST(request) {
       }, { status: 400 });
     }
 
+    // === Parse viết tắt từ receiverName ===
+    const matchResult = extractAddressFromName(receiverName);
+    const cleanName = matchResult
+      ? extractNameOnly(receiverName, matchResult.matchedText)
+      : receiverName;
+    const dropoffAddress = matchResult
+      ? `${matchResult.stt}. ${matchResult.stationName}`
+      : (station || '');
+
+    console.log(`[Webhook NhapHang] Address match: ${matchResult ? `${matchResult.stt}. ${matchResult.stationName}` : 'none'}, Clean name: ${cleanName}`);
+
     // Xác định route và time
     const route = determineRoute(senderStation, station);
     const time = determineTimeSlot(sendDate, vehicle);
@@ -192,14 +204,14 @@ export async function POST(request) {
       `, [
         timeSlot.id,
         receiverPhone,
-        receiverName,
+        cleanName,              // Tên đã bỏ phần viết tắt
         '', // gender
         '', // nationality
         'Dọc đường', // pickupMethod
         senderStation || '', // pickupAddress - điểm đón
         'Dọc đường', // dropoffMethod
-        station || '', // dropoffAddress - điểm trả
-        `[NhapHang: ${productId}] Xe: ${vehicle || 'N/A'} | ${notes || ''}`.trim(),
+        dropoffAddress,         // Điểm trả đã match (vd: "54. Trà Cổ")
+        `giao ${cleanName} ${quantity}`, // Note format: "giao minh 1"
         seatNumber,
         0, // amount - hàng dọc đường thường không tính tiền vé
         0, // paid
