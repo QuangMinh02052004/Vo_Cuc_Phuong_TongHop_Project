@@ -1,5 +1,9 @@
 import { queryNhapHang, queryOneNhapHang } from '../../../../lib/database';
 import { NextResponse } from 'next/server';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'vocucphuong-secret-key-2024';
 
 // ===========================================
 // API: Authentication cho NhapHang
@@ -18,11 +22,11 @@ export async function POST(request) {
       }, { status: 400 });
     }
 
-    // Tìm user theo username
+    // Tìm user theo username từ bảng NH_Users
     const user = await queryOneNhapHang(`
       SELECT id, username, password, "fullName", phone, role, station, active
       FROM "NH_Users"
-      WHERE username = $1
+      WHERE username = $1 AND active = true
     `, [username]);
 
     if (!user) {
@@ -32,8 +36,15 @@ export async function POST(request) {
       }, { status: 401 });
     }
 
-    // Kiểm tra password (plain text comparison - should use bcrypt in production)
-    if (user.password !== password) {
+    // So sánh password: hỗ trợ cả bcrypt hash và plain text
+    let isMatch = false;
+    if (user.password.startsWith('$2')) {
+      isMatch = await bcrypt.compare(password, user.password);
+    } else {
+      isMatch = (user.password === password);
+    }
+
+    if (!isMatch) {
       return NextResponse.json({
         success: false,
         error: 'Mật khẩu không đúng'
@@ -48,12 +59,26 @@ export async function POST(request) {
       }, { status: 403 });
     }
 
+    // Tạo JWT token
+    const token = jwt.sign(
+      {
+        id: user.id,
+        username: user.username,
+        role: user.role,
+        station: user.station,
+        fullName: user.fullName
+      },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
     // Trả về thông tin user (không có password)
     const { password: _, ...userWithoutPassword } = user;
 
     return NextResponse.json({
       success: true,
       message: 'Đăng nhập thành công',
+      token,
       user: userWithoutPassword
     });
 

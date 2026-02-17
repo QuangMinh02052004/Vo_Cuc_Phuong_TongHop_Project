@@ -1,4 +1,4 @@
-import { queryOne } from '../../../../../lib/database';
+import { queryOneNhapHang } from '../../../../../lib/database';
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -16,8 +16,8 @@ export async function POST(request) {
       }, { status: 400 });
     }
 
-    const user = await queryOne(
-      'SELECT * FROM "NhapHangUsers" WHERE username = $1',
+    const user = await queryOneNhapHang(
+      'SELECT * FROM "NH_Users" WHERE username = $1 AND active = true',
       [username]
     );
 
@@ -28,7 +28,16 @@ export async function POST(request) {
       }, { status: 401 });
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    // So sánh password: hỗ trợ cả bcrypt hash và plain text (tạm thời)
+    let isMatch = false;
+    if (user.password.startsWith('$2')) {
+      // Password đã được hash bằng bcrypt
+      isMatch = await bcrypt.compare(password, user.password);
+    } else {
+      // Plain text password (legacy) - so sánh trực tiếp
+      isMatch = (user.password === password);
+    }
+
     if (!isMatch) {
       return NextResponse.json({
         success: false,
