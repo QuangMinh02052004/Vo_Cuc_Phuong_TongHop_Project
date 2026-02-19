@@ -7,21 +7,21 @@ import { NextResponse } from 'next/server';
 // GET /api/nhap-hang/setup
 //
 // Tạo đầy đủ các bảng với schema chuẩn:
-// - NH_Stations: Danh sách bến xe
-// - NH_Users: Tài khoản nhân viên
-// - NH_Counters: Sinh mã đơn tự động (YYMMDD.SSNN)
-// - NH_Products: Đơn hàng vận chuyển
-// - NH_ProductLogs: Lịch sử thay đổi
+// - Stations: Danh sách bến xe
+// - Users: Tài khoản nhân viên
+// - Counters: Sinh mã đơn tự động (YYMMDD.SSNN)
+// - Products: Đơn hàng vận chuyển
+// - ProductLogs: Lịch sử thay đổi
 
 export async function GET(request) {
   try {
     const results = [];
 
     // ============================================================
-    // 1. NH_Stations - Danh sách bến xe
+    // 1. Stations - Danh sách bến xe
     // ============================================================
     await queryNhapHang(`
-      CREATE TABLE IF NOT EXISTS "NH_Stations" (
+      CREATE TABLE IF NOT EXISTS "Stations" (
         id SERIAL PRIMARY KEY,
         code VARCHAR(10) NOT NULL UNIQUE,
         name VARCHAR(100) NOT NULL,
@@ -34,13 +34,13 @@ export async function GET(request) {
         "updatedAt" TIMESTAMP DEFAULT NOW()
       )
     `);
-    results.push('✓ NH_Stations table created');
+    results.push('✓ Stations table created');
 
     // ============================================================
-    // 2. NH_Users - Tài khoản nhân viên NhapHang
+    // 2. Users - Tài khoản nhân viên NhapHang
     // ============================================================
     await queryNhapHang(`
-      CREATE TABLE IF NOT EXISTS "NH_Users" (
+      CREATE TABLE IF NOT EXISTS "Users" (
         id SERIAL PRIMARY KEY,
         username VARCHAR(50) NOT NULL UNIQUE,
         password VARCHAR(255) NOT NULL,
@@ -53,14 +53,14 @@ export async function GET(request) {
         "updatedAt" TIMESTAMP DEFAULT NOW()
       )
     `);
-    results.push('✓ NH_Users table created');
+    results.push('✓ Users table created');
 
     // ============================================================
-    // 3. NH_Counters - Sinh mã đơn tự động
+    // 3. Counters - Sinh mã đơn tự động
     // Format: YYMMDD.SSNN (SS=station code, NN=sequence)
     // ============================================================
     await queryNhapHang(`
-      CREATE TABLE IF NOT EXISTS "NH_Counters" (
+      CREATE TABLE IF NOT EXISTS "Counters" (
         id SERIAL PRIMARY KEY,
         "counterKey" VARCHAR(100) NOT NULL UNIQUE,
         station VARCHAR(10) NOT NULL,
@@ -69,14 +69,14 @@ export async function GET(request) {
         "lastUpdated" TIMESTAMP DEFAULT NOW()
       )
     `);
-    results.push('✓ NH_Counters table created');
+    results.push('✓ Counters table created');
 
     // ============================================================
-    // 4. NH_Products - Đơn hàng vận chuyển (Main table)
+    // 4. Products - Đơn hàng vận chuyển (Main table)
     // ID format: YYMMDD.SSNN
     // ============================================================
     await queryNhapHang(`
-      CREATE TABLE IF NOT EXISTS "NH_Products" (
+      CREATE TABLE IF NOT EXISTS "Products" (
         id VARCHAR(50) PRIMARY KEY,
 
         -- Sender Information
@@ -117,13 +117,13 @@ export async function GET(request) {
         "syncedToTongHop" BOOLEAN DEFAULT false
       )
     `);
-    results.push('✓ NH_Products table created');
+    results.push('✓ Products table created');
 
     // ============================================================
-    // 5. NH_ProductLogs - Audit trail for changes
+    // 5. ProductLogs - Audit trail for changes
     // ============================================================
     await queryNhapHang(`
-      CREATE TABLE IF NOT EXISTS "NH_ProductLogs" (
+      CREATE TABLE IF NOT EXISTS "ProductLogs" (
         "logId" SERIAL PRIMARY KEY,
         "productId" VARCHAR(50) NOT NULL,
         action VARCHAR(20) NOT NULL,
@@ -135,33 +135,33 @@ export async function GET(request) {
         "ipAddress" VARCHAR(50)
       )
     `);
-    results.push('✓ NH_ProductLogs table created');
+    results.push('✓ ProductLogs table created');
 
     // ============================================================
     // Create Indexes
     // ============================================================
     const indexes = [
-      'CREATE INDEX IF NOT EXISTS idx_nh_stations_code ON "NH_Stations"(code)',
-      'CREATE INDEX IF NOT EXISTS idx_nh_stations_name ON "NH_Stations"(name)',
-      'CREATE INDEX IF NOT EXISTS idx_nh_stations_active ON "NH_Stations"("isActive")',
-      'CREATE INDEX IF NOT EXISTS idx_nh_users_username ON "NH_Users"(username)',
-      'CREATE INDEX IF NOT EXISTS idx_nh_users_station ON "NH_Users"(station)',
-      'CREATE INDEX IF NOT EXISTS idx_nh_users_active ON "NH_Users"(active)',
-      'CREATE INDEX IF NOT EXISTS idx_nh_counters_key ON "NH_Counters"("counterKey")',
-      'CREATE INDEX IF NOT EXISTS idx_nh_counters_station_date ON "NH_Counters"(station, "dateKey")',
-      'CREATE INDEX IF NOT EXISTS idx_nh_products_senddate ON "NH_Products"("sendDate")',
-      'CREATE INDEX IF NOT EXISTS idx_nh_products_sender_station ON "NH_Products"("senderStation")',
-      'CREATE INDEX IF NOT EXISTS idx_nh_products_station ON "NH_Products"(station)',
-      'CREATE INDEX IF NOT EXISTS idx_nh_products_payment ON "NH_Products"("paymentStatus")',
-      'CREATE INDEX IF NOT EXISTS idx_nh_products_status ON "NH_Products"(status)',
-      'CREATE INDEX IF NOT EXISTS idx_nh_products_delivery ON "NH_Products"("deliveryStatus")',
-      'CREATE INDEX IF NOT EXISTS idx_nh_products_sender_phone ON "NH_Products"("senderPhone")',
-      'CREATE INDEX IF NOT EXISTS idx_nh_products_receiver_phone ON "NH_Products"("receiverPhone")',
-      'CREATE INDEX IF NOT EXISTS idx_nh_products_vehicle ON "NH_Products"(vehicle)',
-      'CREATE INDEX IF NOT EXISTS idx_nh_products_synced ON "NH_Products"("syncedToTongHop")',
-      'CREATE INDEX IF NOT EXISTS idx_nh_productlogs_product ON "NH_ProductLogs"("productId")',
-      'CREATE INDEX IF NOT EXISTS idx_nh_productlogs_action ON "NH_ProductLogs"(action)',
-      'CREATE INDEX IF NOT EXISTS idx_nh_productlogs_changed_at ON "NH_ProductLogs"("changedAt")',
+      'CREATE INDEX IF NOT EXISTS idx_stations_code ON "Stations"(code)',
+      'CREATE INDEX IF NOT EXISTS idx_stations_name ON "Stations"(name)',
+      'CREATE INDEX IF NOT EXISTS idx_stations_active ON "Stations"("isActive")',
+      'CREATE INDEX IF NOT EXISTS idx_users_username ON "Users"(username)',
+      'CREATE INDEX IF NOT EXISTS idx_users_station ON "Users"(station)',
+      'CREATE INDEX IF NOT EXISTS idx_users_active ON "Users"(active)',
+      'CREATE INDEX IF NOT EXISTS idx_counters_key ON "Counters"("counterKey")',
+      'CREATE INDEX IF NOT EXISTS idx_counters_station_date ON "Counters"(station, "dateKey")',
+      'CREATE INDEX IF NOT EXISTS idx_products_senddate ON "Products"("sendDate")',
+      'CREATE INDEX IF NOT EXISTS idx_products_sender_station ON "Products"("senderStation")',
+      'CREATE INDEX IF NOT EXISTS idx_products_station ON "Products"(station)',
+      'CREATE INDEX IF NOT EXISTS idx_products_payment ON "Products"("paymentStatus")',
+      'CREATE INDEX IF NOT EXISTS idx_products_status ON "Products"(status)',
+      'CREATE INDEX IF NOT EXISTS idx_products_delivery ON "Products"("deliveryStatus")',
+      'CREATE INDEX IF NOT EXISTS idx_products_sender_phone ON "Products"("senderPhone")',
+      'CREATE INDEX IF NOT EXISTS idx_products_receiver_phone ON "Products"("receiverPhone")',
+      'CREATE INDEX IF NOT EXISTS idx_products_vehicle ON "Products"(vehicle)',
+      'CREATE INDEX IF NOT EXISTS idx_products_synced ON "Products"("syncedToTongHop")',
+      'CREATE INDEX IF NOT EXISTS idx_productlogs_product ON "ProductLogs"("productId")',
+      'CREATE INDEX IF NOT EXISTS idx_productlogs_action ON "ProductLogs"(action)',
+      'CREATE INDEX IF NOT EXISTS idx_productlogs_changed_at ON "ProductLogs"("changedAt")',
     ];
 
     for (const idx of indexes) {
@@ -173,7 +173,7 @@ export async function GET(request) {
     // Create updatedAt trigger function
     // ============================================================
     await queryNhapHang(`
-      CREATE OR REPLACE FUNCTION update_nh_updated_at()
+      CREATE OR REPLACE FUNCTION update_updated_at()
       RETURNS TRIGGER AS $$
       BEGIN
           NEW."updatedAt" = NOW();
@@ -184,32 +184,32 @@ export async function GET(request) {
     results.push('✓ Trigger function created');
 
     // Triggers for auto-updating updatedAt
-    await queryNhapHang(`DROP TRIGGER IF EXISTS trg_nh_stations_updated ON "NH_Stations"`);
+    await queryNhapHang(`DROP TRIGGER IF EXISTS trg_stations_updated ON "Stations"`);
     await queryNhapHang(`
-      CREATE TRIGGER trg_nh_stations_updated
-        BEFORE UPDATE ON "NH_Stations"
-        FOR EACH ROW EXECUTE FUNCTION update_nh_updated_at()
+      CREATE TRIGGER trg_stations_updated
+        BEFORE UPDATE ON "Stations"
+        FOR EACH ROW EXECUTE FUNCTION update_updated_at()
     `);
 
-    await queryNhapHang(`DROP TRIGGER IF EXISTS trg_nh_users_updated ON "NH_Users"`);
+    await queryNhapHang(`DROP TRIGGER IF EXISTS trg_users_updated ON "Users"`);
     await queryNhapHang(`
-      CREATE TRIGGER trg_nh_users_updated
-        BEFORE UPDATE ON "NH_Users"
-        FOR EACH ROW EXECUTE FUNCTION update_nh_updated_at()
+      CREATE TRIGGER trg_users_updated
+        BEFORE UPDATE ON "Users"
+        FOR EACH ROW EXECUTE FUNCTION update_updated_at()
     `);
 
-    await queryNhapHang(`DROP TRIGGER IF EXISTS trg_nh_products_updated ON "NH_Products"`);
+    await queryNhapHang(`DROP TRIGGER IF EXISTS trg_products_updated ON "Products"`);
     await queryNhapHang(`
-      CREATE TRIGGER trg_nh_products_updated
-        BEFORE UPDATE ON "NH_Products"
-        FOR EACH ROW EXECUTE FUNCTION update_nh_updated_at()
+      CREATE TRIGGER trg_products_updated
+        BEFORE UPDATE ON "Products"
+        FOR EACH ROW EXECUTE FUNCTION update_updated_at()
     `);
     results.push('✓ Triggers created');
 
     // ============================================================
     // SAMPLE DATA - Stations
     // ============================================================
-    const stationCount = await queryOneNhapHang('SELECT COUNT(*) as count FROM "NH_Stations"');
+    const stationCount = await queryOneNhapHang('SELECT COUNT(*) as count FROM "Stations"');
 
     if (parseInt(stationCount.count) === 0) {
       const stations = [
@@ -227,7 +227,7 @@ export async function GET(request) {
 
       for (const s of stations) {
         await queryNhapHang(`
-          INSERT INTO "NH_Stations" (code, name, "fullName", address, phone, region, "isActive")
+          INSERT INTO "Stations" (code, name, "fullName", address, phone, region, "isActive")
           VALUES ($1, $2, $3, $4, $5, $6, true)
           ON CONFLICT (code) DO NOTHING
         `, [s.code, s.name, s.fullName, s.address, s.phone, s.region]);
@@ -240,7 +240,7 @@ export async function GET(request) {
     // ============================================================
     // SAMPLE DATA - Users
     // ============================================================
-    const userCount = await queryOneNhapHang('SELECT COUNT(*) as count FROM "NH_Users"');
+    const userCount = await queryOneNhapHang('SELECT COUNT(*) as count FROM "Users"');
 
     if (parseInt(userCount.count) === 0) {
       const users = [
@@ -252,7 +252,7 @@ export async function GET(request) {
 
       for (const u of users) {
         await queryNhapHang(`
-          INSERT INTO "NH_Users" (username, password, "fullName", role, station, active)
+          INSERT INTO "Users" (username, password, "fullName", role, station, active)
           VALUES ($1, $2, $3, $4, $5, true)
           ON CONFLICT (username) DO NOTHING
         `, [u.username, u.password, u.fullName, u.role, u.station]);
@@ -265,7 +265,7 @@ export async function GET(request) {
     return NextResponse.json({
       success: true,
       message: 'NhapHang database setup completed!',
-      tables: ['NH_Stations', 'NH_Users', 'NH_Counters', 'NH_Products', 'NH_ProductLogs'],
+      tables: ['Stations', 'Users', 'Counters', 'Products', 'ProductLogs'],
       results
     });
 

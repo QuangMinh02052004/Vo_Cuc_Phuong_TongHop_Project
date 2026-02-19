@@ -17,7 +17,7 @@ export async function POST(request) {
     }
 
     const user = await queryOneNhapHang(
-      'SELECT * FROM "NH_Users" WHERE username = $1 AND active = true',
+      'SELECT * FROM "Users" WHERE username = $1 AND active = true',
       [username]
     );
 

@@ -2,7 +2,7 @@ import { queryNhapHang, queryOneNhapHang } from '../../../../lib/database';
 import { NextResponse } from 'next/server';
 
 // ===========================================
-// API: NH_Stations - Danh sách bến xe
+// API: Stations - Danh sách bến xe
 // ===========================================
 // GET /api/nhap-hang/stations - Lấy tất cả stations
 // POST /api/nhap-hang/stations - Thêm station mới
@@ -12,7 +12,7 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const activeOnly = searchParams.get('active') !== 'false';
 
-    let query = 'SELECT * FROM "NH_Stations"';
+    let query = 'SELECT * FROM "Stations"';
     const params = [];
 
     if (activeOnly) {
@@ -30,7 +30,7 @@ export async function GET(request) {
     });
 
   } catch (error) {
-    console.error('[NH_Stations] GET Error:', error);
+    console.error('[Stations] GET Error:', error);
     return NextResponse.json({
       success: false,
       error: error.message
@@ -53,7 +53,7 @@ export async function POST(request) {
     const fullName = `${code} - ${name}`;
 
     const result = await queryOneNhapHang(`
-      INSERT INTO "NH_Stations" (code, name, "fullName", address, phone, region, "isActive")
+      INSERT INTO "Stations" (code, name, "fullName", address, phone, region, "isActive")
       VALUES ($1, $2, $3, $4, $5, $6, true)
       RETURNING *
     `, [code, name, fullName, address || null, phone || null, region || null]);
@@ -65,7 +65,7 @@ export async function POST(request) {
     });
 
   } catch (error) {
-    console.error('[NH_Stations] POST Error:', error);
+    console.error('[Stations] POST Error:', error);
 
     if (error.code === '23505') { // Unique violation
       return NextResponse.json({

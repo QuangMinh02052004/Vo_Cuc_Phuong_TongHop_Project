@@ -232,16 +232,16 @@ export async function GET(request) {
     results.push('=== RESETTING NHAPHANG DATABASE ===');
 
     // Drop all NhapHang tables
-    await queryNhapHang('DROP TABLE IF EXISTS "NH_ProductLogs" CASCADE');
-    await queryNhapHang('DROP TABLE IF EXISTS "NH_Products" CASCADE');
-    await queryNhapHang('DROP TABLE IF EXISTS "NH_Counters" CASCADE');
-    await queryNhapHang('DROP TABLE IF EXISTS "NH_Users" CASCADE');
-    await queryNhapHang('DROP TABLE IF EXISTS "NH_Stations" CASCADE');
+    await queryNhapHang('DROP TABLE IF EXISTS "ProductLogs" CASCADE');
+    await queryNhapHang('DROP TABLE IF EXISTS "Products" CASCADE');
+    await queryNhapHang('DROP TABLE IF EXISTS "Counters" CASCADE');
+    await queryNhapHang('DROP TABLE IF EXISTS "Users" CASCADE');
+    await queryNhapHang('DROP TABLE IF EXISTS "Stations" CASCADE');
     results.push('✓ Dropped all NhapHang tables');
 
-    // Create NH_Stations
+    // Create Stations
     await queryNhapHang(`
-      CREATE TABLE "NH_Stations" (
+      CREATE TABLE "Stations" (
         id SERIAL PRIMARY KEY,
         code VARCHAR(10) NOT NULL UNIQUE,
         name VARCHAR(100) NOT NULL,
@@ -254,11 +254,11 @@ export async function GET(request) {
         "updatedAt" TIMESTAMP DEFAULT NOW()
       )
     `);
-    results.push('✓ NH_Stations table created');
+    results.push('✓ Stations table created');
 
-    // Create NH_Users
+    // Create Users
     await queryNhapHang(`
-      CREATE TABLE "NH_Users" (
+      CREATE TABLE "Users" (
         id SERIAL PRIMARY KEY,
         username VARCHAR(50) NOT NULL UNIQUE,
         password VARCHAR(255) NOT NULL,
@@ -271,11 +271,11 @@ export async function GET(request) {
         "updatedAt" TIMESTAMP DEFAULT NOW()
       )
     `);
-    results.push('✓ NH_Users table created');
+    results.push('✓ Users table created');
 
-    // Create NH_Counters
+    // Create Counters
     await queryNhapHang(`
-      CREATE TABLE "NH_Counters" (
+      CREATE TABLE "Counters" (
         id SERIAL PRIMARY KEY,
         "counterKey" VARCHAR(100) NOT NULL UNIQUE,
         station VARCHAR(10) NOT NULL,
@@ -284,11 +284,11 @@ export async function GET(request) {
         "lastUpdated" TIMESTAMP DEFAULT NOW()
       )
     `);
-    results.push('✓ NH_Counters table created');
+    results.push('✓ Counters table created');
 
-    // Create NH_Products
+    // Create Products
     await queryNhapHang(`
-      CREATE TABLE "NH_Products" (
+      CREATE TABLE "Products" (
         id VARCHAR(50) PRIMARY KEY,
         "senderName" VARCHAR(100),
         "senderPhone" VARCHAR(20),
@@ -315,11 +315,11 @@ export async function GET(request) {
         "syncedToTongHop" BOOLEAN DEFAULT false
       )
     `);
-    results.push('✓ NH_Products table created');
+    results.push('✓ Products table created');
 
-    // Create NH_ProductLogs
+    // Create ProductLogs
     await queryNhapHang(`
-      CREATE TABLE "NH_ProductLogs" (
+      CREATE TABLE "ProductLogs" (
         "logId" SERIAL PRIMARY KEY,
         "productId" VARCHAR(50) NOT NULL,
         action VARCHAR(20) NOT NULL,
@@ -331,13 +331,13 @@ export async function GET(request) {
         "ipAddress" VARCHAR(50)
       )
     `);
-    results.push('✓ NH_ProductLogs table created');
+    results.push('✓ ProductLogs table created');
 
     // Create NhapHang indexes
-    await queryNhapHang('CREATE INDEX IF NOT EXISTS idx_nh_products_senddate ON "NH_Products"("sendDate")');
-    await queryNhapHang('CREATE INDEX IF NOT EXISTS idx_nh_products_station ON "NH_Products"(station)');
-    await queryNhapHang('CREATE INDEX IF NOT EXISTS idx_nh_products_sender ON "NH_Products"("senderStation")');
-    await queryNhapHang('CREATE INDEX IF NOT EXISTS idx_nh_products_synced ON "NH_Products"("syncedToTongHop")');
+    await queryNhapHang('CREATE INDEX IF NOT EXISTS idx_products_senddate ON "Products"("sendDate")');
+    await queryNhapHang('CREATE INDEX IF NOT EXISTS idx_products_station ON "Products"(station)');
+    await queryNhapHang('CREATE INDEX IF NOT EXISTS idx_products_sender ON "Products"("senderStation")');
+    await queryNhapHang('CREATE INDEX IF NOT EXISTS idx_products_synced ON "Products"("syncedToTongHop")');
     results.push('✓ NhapHang indexes created');
 
     // Seed Stations
@@ -357,7 +357,7 @@ export async function GET(request) {
 
     for (const s of stations) {
       await queryNhapHang(`
-        INSERT INTO "NH_Stations" (code, name, "fullName", region, "isActive")
+        INSERT INTO "Stations" (code, name, "fullName", region, "isActive")
         VALUES ($1, $2, $3, $4, true)
       `, [s.code, s.name, s.fullName, s.region]);
     }
@@ -373,7 +373,7 @@ export async function GET(request) {
 
     for (const u of users) {
       await queryNhapHang(`
-        INSERT INTO "NH_Users" (username, password, "fullName", role, station, active)
+        INSERT INTO "Users" (username, password, "fullName", role, station, active)
         VALUES ($1, $2, $3, $4, $5, true)
       `, [u.username, u.password, u.fullName, u.role, u.station]);
     }

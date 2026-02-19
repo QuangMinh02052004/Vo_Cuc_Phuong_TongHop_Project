@@ -2,7 +2,7 @@ import { queryNhapHang, queryOneNhapHang } from '../../../../lib/database';
 import { NextResponse } from 'next/server';
 
 // ===========================================
-// API: NH_Counters - Sinh mã đơn tự động
+// API: Counters - Sinh mã đơn tự động
 // ===========================================
 // GET /api/nhap-hang/counters?station=01&date=2025-01-18 - Lấy mã tiếp theo
 // POST /api/nhap-hang/counters - Increment counter và trả về mã mới
@@ -52,7 +52,7 @@ export async function GET(request) {
 
     // Lấy counter hiện tại
     const counter = await queryOneNhapHang(`
-      SELECT * FROM "NH_Counters" WHERE "counterKey" = $1
+      SELECT * FROM "Counters" WHERE "counterKey" = $1
     `, [counterKey]);
 
     const currentValue = counter ? counter.value : 0;
@@ -72,7 +72,7 @@ export async function GET(request) {
     });
 
   } catch (error) {
-    console.error('[NH_Counters] GET Error:', error);
+    console.error('[Counters] GET Error:', error);
     return NextResponse.json({
       success: false,
       error: error.message
@@ -98,10 +98,10 @@ export async function POST(request) {
 
     // Upsert counter và lấy giá trị mới
     const result = await queryOneNhapHang(`
-      INSERT INTO "NH_Counters" ("counterKey", station, "dateKey", value, "lastUpdated")
+      INSERT INTO "Counters" ("counterKey", station, "dateKey", value, "lastUpdated")
       VALUES ($1, $2, $3, 1, NOW())
       ON CONFLICT ("counterKey")
-      DO UPDATE SET value = "NH_Counters".value + 1, "lastUpdated" = NOW()
+      DO UPDATE SET value = "Counters".value + 1, "lastUpdated" = NOW()
       RETURNING *
     `, [counterKey, station, dateKey]);
 
@@ -116,7 +116,7 @@ export async function POST(request) {
     });
 
   } catch (error) {
-    console.error('[NH_Counters] POST Error:', error);
+    console.error('[Counters] POST Error:', error);
     return NextResponse.json({
       success: false,
       error: error.message

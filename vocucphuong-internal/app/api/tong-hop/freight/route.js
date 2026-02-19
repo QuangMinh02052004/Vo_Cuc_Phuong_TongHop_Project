@@ -72,7 +72,7 @@ export async function GET(request) {
         p."tongHopBookingId" as tonghop_booking_id,
         p."syncedToTongHop" as synced,
         p."createdAt" as created_at
-      FROM "NH_Products" p
+      FROM "Products" p
       WHERE (p.station LIKE '00 -%' OR p.station LIKE '00-%' OR LOWER(p.station) LIKE '%dọc đường%' OR LOWER(p.station) LIKE '%doc duong%')
     `;
 

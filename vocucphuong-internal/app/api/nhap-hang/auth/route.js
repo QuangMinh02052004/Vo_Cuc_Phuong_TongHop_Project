@@ -22,10 +22,10 @@ export async function POST(request) {
       }, { status: 400 });
     }
 
-    // Tìm user theo username từ bảng NH_Users
+    // Tìm user theo username từ bảng Users
     const user = await queryOneNhapHang(`
       SELECT id, username, password, "fullName", phone, role, station, active
-      FROM "NH_Users"
+      FROM "Users"
       WHERE username = $1 AND active = true
     `, [username]);
 
@@ -83,7 +83,7 @@ export async function POST(request) {
     });
 
   } catch (error) {
-    console.error('[NH_Auth] POST Error:', error);
+    console.error('[Auth] POST Error:', error);
     return NextResponse.json({
       success: false,
       error: error.message

@@ -102,7 +102,7 @@ export async function GET(request) {
         COALESCE(SUM(CASE WHEN "paymentStatus" = 'unpaid' THEN "totalAmount" ELSE 0 END), 0) as "unpaidAmount",
         COUNT(CASE WHEN status = 'delivered' THEN 1 END) as "deliveredOrders",
         COUNT(CASE WHEN status = 'pending' THEN 1 END) as "pendingOrders"
-      FROM "NH_Products"
+      FROM "Products"
       WHERE DATE("sendDate") >= $1 AND DATE("sendDate") <= $2
     `, [startDate, endDate]);
 
@@ -112,7 +112,7 @@ export async function GET(request) {
         station,
         COUNT(*) as "orderCount",
         COALESCE(SUM("totalAmount"), 0) as revenue
-      FROM "NH_Products"
+      FROM "Products"
       WHERE DATE("sendDate") >= $1 AND DATE("sendDate") <= $2
       GROUP BY station
       ORDER BY revenue DESC
@@ -125,7 +125,7 @@ export async function GET(request) {
         DATE("sendDate") as date,
         COUNT(*) as "orderCount",
         COALESCE(SUM("totalAmount"), 0) as revenue
-      FROM "NH_Products"
+      FROM "Products"
       WHERE DATE("sendDate") >= $1 AND DATE("sendDate") <= $2
       GROUP BY DATE("sendDate")
       ORDER BY date ASC
@@ -138,7 +138,7 @@ export async function GET(request) {
       SELECT
         COALESCE(SUM("totalAmount"), 0) as "totalRevenue",
         COUNT(*) as "totalOrders"
-      FROM "NH_Products"
+      FROM "Products"
       WHERE DATE("sendDate") >= $1 AND DATE("sendDate") <= $2
     `, [prevStartDate, prevEndDate]);
 

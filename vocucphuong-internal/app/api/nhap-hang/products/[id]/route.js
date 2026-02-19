@@ -2,7 +2,7 @@ import { queryNhapHang, queryOneNhapHang, queryTongHop } from '../../../../../li
 import { NextResponse } from 'next/server';
 
 // ===========================================
-// API: NH_Products/[id] - Chi tiết đơn hàng
+// API: Products/[id] - Chi tiết đơn hàng
 // ===========================================
 // GET /api/nhap-hang/products/[id] - Lấy chi tiết
 // PUT /api/nhap-hang/products/[id] - Cập nhật toàn bộ
@@ -39,7 +39,7 @@ function sanitizeSendDate(product) {
 async function logProductChange(productId, action, field, oldValue, newValue, changedBy, ipAddress) {
   try {
     await queryNhapHang(`
-      INSERT INTO "NH_ProductLogs" ("productId", action, field, "oldValue", "newValue", "changedBy", "ipAddress")
+      INSERT INTO "ProductLogs" ("productId", action, field, "oldValue", "newValue", "changedBy", "ipAddress")
       VALUES ($1, $2, $3, $4, $5, $6, $7)
     `, [
       productId,
@@ -61,7 +61,7 @@ export async function GET(request, { params }) {
     const { id } = await params;
 
     const product = await queryOneNhapHang(`
-      SELECT * FROM "NH_Products" WHERE id = $1
+      SELECT * FROM "Products" WHERE id = $1
     `, [id]);
 
     if (!product) {
@@ -74,7 +74,7 @@ export async function GET(request, { params }) {
 
     // Get logs for this product
     const logs = await queryNhapHang(`
-      SELECT * FROM "NH_ProductLogs"
+      SELECT * FROM "ProductLogs"
       WHERE "productId" = $1
       ORDER BY "changedAt" DESC
       LIMIT 50
@@ -91,7 +91,7 @@ export async function GET(request, { params }) {
     });
 
   } catch (error) {
-    console.error('[NH_Products/id] GET Error:', error);
+    console.error('[Products/id] GET Error:', error);
     return NextResponse.json({
       success: false,
       error: error.message,
@@ -110,7 +110,7 @@ export async function PUT(request, { params }) {
 
     // Get current product
     const existing = await queryOneNhapHang(`
-      SELECT * FROM "NH_Products" WHERE id = $1
+      SELECT * FROM "Products" WHERE id = $1
     `, [id]);
 
     if (!existing) {
@@ -164,7 +164,7 @@ export async function PUT(request, { params }) {
     updates.push(`"updatedAt" = NOW()`);
     values.push(id);
 
-    const sqlQuery = `UPDATE "NH_Products" SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING *`;
+    const sqlQuery = `UPDATE "Products" SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING *`;
     const result = await queryNhapHang(sqlQuery, values);
 
     const updatedProduct = result[0];
@@ -200,7 +200,7 @@ export async function PUT(request, { params }) {
     });
 
   } catch (error) {
-    console.error('[NH_Products/id] PUT Error:', error);
+    console.error('[Products/id] PUT Error:', error);
     return NextResponse.json({
       success: false,
       error: error.message,
@@ -219,7 +219,7 @@ export async function DELETE(request, { params }) {
 
     // Get current product
     const existing = await queryOneNhapHang(`
-      SELECT * FROM "NH_Products" WHERE id = $1
+      SELECT * FROM "Products" WHERE id = $1
     `, [id]);
 
     if (!existing) {
@@ -236,9 +236,9 @@ export async function DELETE(request, { params }) {
         await queryTongHop(`
           DELETE FROM "TH_Bookings" WHERE id = $1
         `, [existing.tongHopBookingId]);
-        console.log(`[NH_Products] Deleted TongHop booking: ${existing.tongHopBookingId}`);
+        console.log(`[Products] Deleted TongHop booking: ${existing.tongHopBookingId}`);
       } catch (thError) {
-        console.error('[NH_Products] Error deleting TongHop booking:', thError.message);
+        console.error('[Products] Error deleting TongHop booking:', thError.message);
       }
     }
 
@@ -252,7 +252,7 @@ export async function DELETE(request, { params }) {
 
     // Delete product
     await queryNhapHang(`
-      DELETE FROM "NH_Products" WHERE id = $1
+      DELETE FROM "Products" WHERE id = $1
     `, [id]);
 
     return NextResponse.json({
@@ -262,7 +262,7 @@ export async function DELETE(request, { params }) {
     });
 
   } catch (error) {
-    console.error('[NH_Products/id] DELETE Error:', error);
+    console.error('[Products/id] DELETE Error:', error);
     return NextResponse.json({
       success: false,
       error: error.message,

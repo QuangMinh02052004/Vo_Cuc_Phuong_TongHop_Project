@@ -2,7 +2,7 @@ import { queryNhapHang, queryOneNhapHang } from '../../../../lib/database';
 import { NextResponse } from 'next/server';
 
 // ===========================================
-// API: NH_Users - Quản lý tài khoản
+// API: Users - Quản lý tài khoản
 // ===========================================
 // GET /api/nhap-hang/users - Lấy tất cả users
 // POST /api/nhap-hang/users - Tạo user mới
@@ -14,7 +14,7 @@ export async function GET(request) {
 
     let query = `
       SELECT id, username, "fullName", phone, role, station, active, "createdAt", "updatedAt"
-      FROM "NH_Users"
+      FROM "Users"
     `;
     const params = [];
 
@@ -33,7 +33,7 @@ export async function GET(request) {
     });
 
   } catch (error) {
-    console.error('[NH_Users] GET Error:', error);
+    console.error('[Users] GET Error:', error);
     return NextResponse.json({
       success: false,
       error: error.message
@@ -54,7 +54,7 @@ export async function POST(request) {
     }
 
     const result = await queryOneNhapHang(`
-      INSERT INTO "NH_Users" (username, password, "fullName", phone, role, station, active)
+      INSERT INTO "Users" (username, password, "fullName", phone, role, station, active)
       VALUES ($1, $2, $3, $4, $5, $6, true)
       RETURNING id, username, "fullName", phone, role, station, active, "createdAt"
     `, [username, password, fullName, phone || null, role || 'employee', station || null]);
@@ -66,7 +66,7 @@ export async function POST(request) {
     });
 
   } catch (error) {
-    console.error('[NH_Users] POST Error:', error);
+    console.error('[Users] POST Error:', error);
 
     if (error.code === '23505') {
       return NextResponse.json({

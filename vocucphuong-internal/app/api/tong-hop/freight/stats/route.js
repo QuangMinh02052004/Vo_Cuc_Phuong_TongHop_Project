@@ -18,7 +18,7 @@ export async function GET(request) {
         COUNT(CASE WHEN status = 'delivered' OR "deliveryStatus" = 'delivered' THEN 1 END) as delivered,
         COUNT(CASE WHEN status = 'cancelled' THEN 1 END) as cancelled,
         COALESCE(SUM("totalAmount"), 0) as total_revenue
-      FROM "NH_Products"
+      FROM "Products"
       WHERE (station LIKE '00 -%' OR station LIKE '00-%' OR LOWER(station) LIKE '%dọc đường%' OR LOWER(station) LIKE '%doc duong%')
     `);
 

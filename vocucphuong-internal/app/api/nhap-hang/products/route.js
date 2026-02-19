@@ -3,7 +3,7 @@ import { extractAddressFromName, extractNameOnly } from '../../../../lib/station
 import { NextResponse } from 'next/server';
 
 // ===========================================
-// API: NH_Products - Đơn hàng vận chuyển
+// API: Products - Đơn hàng vận chuyển
 // ===========================================
 // GET /api/nhap-hang/products - Lấy danh sách đơn hàng
 // POST /api/nhap-hang/products - Tạo đơn hàng mới (+ tự động tạo TongHop booking nếu là Dọc Đường)
@@ -197,7 +197,7 @@ function getClientIP(request) {
 async function logProductChange(productId, action, field, oldValue, newValue, changedBy, ipAddress) {
   try {
     await queryNhapHang(`
-      INSERT INTO "NH_ProductLogs" ("productId", action, field, "oldValue", "newValue", "changedBy", "ipAddress")
+      INSERT INTO "ProductLogs" ("productId", action, field, "oldValue", "newValue", "changedBy", "ipAddress")
       VALUES ($1, $2, $3, $4, $5, $6, $7)
     `, [
       productId,
@@ -397,7 +397,7 @@ export async function GET(request) {
     const limit = parseInt(searchParams.get('limit')) || 500;
     const offset = parseInt(searchParams.get('offset')) || 0;
 
-    let query = 'SELECT * FROM "NH_Products" WHERE 1=1';
+    let query = 'SELECT * FROM "Products" WHERE 1=1';
     const params = [];
     let paramIndex = 1;
 
@@ -449,7 +449,7 @@ export async function GET(request) {
     const products = await queryNhapHang(query, params);
 
     // Get total count
-    let countQuery = 'SELECT COUNT(*) as total FROM "NH_Products" WHERE 1=1';
+    let countQuery = 'SELECT COUNT(*) as total FROM "Products" WHERE 1=1';
     const countParams = [];
     let countIndex = 1;
 
@@ -500,7 +500,7 @@ export async function GET(request) {
     });
 
   } catch (error) {
-    console.error('[NH_Products] GET Error:', error);
+    console.error('[Products] GET Error:', error);
     return NextResponse.json({
       success: false,
       error: error.message,
@@ -572,10 +572,10 @@ export async function POST(request) {
     if (!productId) {
       // Get next counter value
       const counterResult = await queryOneNhapHang(`
-        INSERT INTO "NH_Counters" ("counterKey", station, "dateKey", value, "lastUpdated")
+        INSERT INTO "Counters" ("counterKey", station, "dateKey", value, "lastUpdated")
         VALUES ($1, $2, $3, 1, NOW())
         ON CONFLICT ("counterKey")
-        DO UPDATE SET value = "NH_Counters".value + 1, "lastUpdated" = NOW()
+        DO UPDATE SET value = "Counters".value + 1, "lastUpdated" = NOW()
         RETURNING value
       `, [counterKey, stationCode, dateKey]);
 
@@ -587,7 +587,7 @@ export async function POST(request) {
 
     // Insert product
     const result = await queryNhapHang(`
-      INSERT INTO "NH_Products" (
+      INSERT INTO "Products" (
         id, "senderName", "senderPhone", "senderStation",
         "receiverName", "receiverPhone", station,
         "productType", quantity, vehicle, insurance, "totalAmount",
@@ -655,7 +655,7 @@ export async function POST(request) {
 
       if (tongHopBookingId) {
         await queryNhapHang(`
-          UPDATE "NH_Products"
+          UPDATE "Products"
           SET "tongHopBookingId" = $1, "syncedToTongHop" = true
           WHERE id = $2
         `, [tongHopBookingId, productId]);
@@ -679,7 +679,7 @@ export async function POST(request) {
     }, { status: 201 });
 
   } catch (error) {
-    console.error('[NH_Products] POST Error:', error);
+    console.error('[Products] POST Error:', error);
 
     if (error.code === '23505') {
       return NextResponse.json({

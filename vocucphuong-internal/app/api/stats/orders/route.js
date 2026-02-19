@@ -27,7 +27,7 @@ export async function GET(request) {
           "productType", quantity, "totalAmount",
           "paymentStatus", status, "deliveryStatus",
           "sendDate", notes, "createdAt"
-        FROM "NH_Products"
+        FROM "Products"
         WHERE 1=1
       `;
       const params = [];

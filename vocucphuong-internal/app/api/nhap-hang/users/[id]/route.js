@@ -2,7 +2,7 @@ import { queryNhapHang, queryOneNhapHang } from '../../../../../lib/database';
 import { NextResponse } from 'next/server';
 
 // ===========================================
-// API: NH_Users/[id] - Chi tiết người dùng
+// API: Users/[id] - Chi tiết người dùng
 // ===========================================
 // GET /api/nhap-hang/users/[id] - Lấy chi tiết
 // PUT /api/nhap-hang/users/[id] - Cập nhật
@@ -15,7 +15,7 @@ export async function GET(request, { params }) {
 
     const user = await queryOneNhapHang(`
       SELECT id, username, "fullName", phone, role, station, active, "createdAt", "updatedAt"
-      FROM "NH_Users"
+      FROM "Users"
       WHERE id = $1
     `, [id]);
 
@@ -34,7 +34,7 @@ export async function GET(request, { params }) {
     });
 
   } catch (error) {
-    console.error('[NH_Users/id] GET Error:', error);
+    console.error('[Users/id] GET Error:', error);
     return NextResponse.json({
       success: false,
       error: error.message,
@@ -51,7 +51,7 @@ export async function PUT(request, { params }) {
 
     // Check if user exists
     const existing = await queryOneNhapHang(`
-      SELECT * FROM "NH_Users" WHERE id = $1
+      SELECT * FROM "Users" WHERE id = $1
     `, [id]);
 
     if (!existing) {
@@ -117,7 +117,7 @@ export async function PUT(request, { params }) {
     values.push(id);
 
     const result = await queryNhapHang(`
-      UPDATE "NH_Users"
+      UPDATE "Users"
       SET ${updates.join(', ')}
       WHERE id = $${paramIndex}
       RETURNING id, username, "fullName", phone, role, station, active, "createdAt", "updatedAt"
@@ -131,7 +131,7 @@ export async function PUT(request, { params }) {
     });
 
   } catch (error) {
-    console.error('[NH_Users/id] PUT Error:', error);
+    console.error('[Users/id] PUT Error:', error);
 
     if (error.code === '23505') {
       return NextResponse.json({
@@ -156,7 +156,7 @@ export async function DELETE(request, { params }) {
 
     // Check if user exists
     const existing = await queryOneNhapHang(`
-      SELECT * FROM "NH_Users" WHERE id = $1
+      SELECT * FROM "Users" WHERE id = $1
     `, [id]);
 
     if (!existing) {
@@ -177,7 +177,7 @@ export async function DELETE(request, { params }) {
     }
 
     await queryNhapHang(`
-      DELETE FROM "NH_Users" WHERE id = $1
+      DELETE FROM "Users" WHERE id = $1
     `, [id]);
 
     return NextResponse.json({
@@ -187,7 +187,7 @@ export async function DELETE(request, { params }) {
     });
 
   } catch (error) {
-    console.error('[NH_Users/id] DELETE Error:', error);
+    console.error('[Users/id] DELETE Error:', error);
     return NextResponse.json({
       success: false,
       error: error.message,
