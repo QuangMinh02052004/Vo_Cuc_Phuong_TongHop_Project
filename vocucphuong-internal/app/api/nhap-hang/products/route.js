@@ -2,6 +2,8 @@ import { queryNhapHang, queryOneNhapHang, queryTongHop, queryOneTongHop } from '
 import { extractAddressFromName, extractNameOnly } from '../../../../lib/stations';
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 // ===========================================
 // API: Products - Đơn hàng vận chuyển
 // ===========================================

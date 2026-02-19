@@ -1,6 +1,8 @@
 import { queryTongHop } from '../../../../lib/database';
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const vehicles = await queryTongHop('SELECT id, code as plate, type FROM "TH_Vehicles" ORDER BY code');

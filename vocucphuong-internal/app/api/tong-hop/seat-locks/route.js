@@ -1,6 +1,8 @@
 import { queryTongHop } from '../../../../lib/database';
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 const LOCK_DURATION_MINUTES = 10;
 
 export async function GET(request) {

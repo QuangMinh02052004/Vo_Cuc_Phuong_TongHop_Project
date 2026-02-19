@@ -1,6 +1,8 @@
 import { queryNhapHang, queryTongHop, queryDatVe } from '../../../lib/database';
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 // ===========================================
 // API: THỐNG KÊ DOANH THU - DOANH SỐ
 // ===========================================

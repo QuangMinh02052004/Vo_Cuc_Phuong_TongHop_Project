@@ -1,6 +1,8 @@
 import { queryTongHop, queryOneTongHop } from '../../../../../../lib/database';
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 // GET /api/tong-hop/customers/search/[phone] - Search customer by phone
 export async function GET(request, { params }) {
   try {

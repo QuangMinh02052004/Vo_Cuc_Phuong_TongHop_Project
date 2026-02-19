@@ -1,6 +1,8 @@
 import { queryTongHop } from '../../../../lib/database';
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 // ===========================================
 // API: DỌN DẸP DUPLICATE TIMESLOTS
 // ===========================================

@@ -1,6 +1,8 @@
 import { queryTongHop, queryOneTongHop } from '../../../../../lib/database';
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 // ===========================================
 // API: WEBHOOK NHẬN BOOKING TỪ DATVE (Website Đặt Vé)
 // ===========================================

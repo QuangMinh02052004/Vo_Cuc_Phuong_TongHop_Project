@@ -1,6 +1,8 @@
 import { queryTongHop, queryOneTongHop } from '../../../../../lib/database';
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request, { params }) {
   try {
     const booking = await queryOneTongHop('SELECT * FROM "TH_Bookings" WHERE id = $1', [params.id]);

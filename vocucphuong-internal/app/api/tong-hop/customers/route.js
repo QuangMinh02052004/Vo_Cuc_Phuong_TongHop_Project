@@ -1,6 +1,8 @@
 import { queryTongHop } from '../../../../lib/database';
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 // POST /api/tong-hop/customers - Save customer info
 export async function POST(request) {
   try {

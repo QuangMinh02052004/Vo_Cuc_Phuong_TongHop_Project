@@ -2,6 +2,8 @@ import { queryNhapHang, queryOneNhapHang, queryTongHop, queryOneTongHop } from '
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 
+export const dynamic = 'force-dynamic';
+
 // ===========================================
 // API: RESET ALL DATABASES
 // ===========================================

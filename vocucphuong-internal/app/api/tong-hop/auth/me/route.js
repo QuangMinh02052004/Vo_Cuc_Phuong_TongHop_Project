@@ -2,6 +2,8 @@ import { queryOneTongHop } from '../../../../../lib/database';
 import { NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 
+export const dynamic = 'force-dynamic';
+
 const JWT_SECRET = process.env.JWT_SECRET || 'vocucphuong-secret-key-2025';
 
 export async function GET(request) {

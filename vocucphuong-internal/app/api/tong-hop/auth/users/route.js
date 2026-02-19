@@ -2,6 +2,8 @@ import { queryTongHop, queryOneTongHop } from '../../../../../lib/database';
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 
+export const dynamic = 'force-dynamic';
+
 // ===========================================
 // API: Users Management
 // ===========================================

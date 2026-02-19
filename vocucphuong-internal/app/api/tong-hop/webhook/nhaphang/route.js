@@ -2,6 +2,8 @@ import { queryTongHop, queryOneTongHop } from '../../../../../lib/database';
 import { extractAddressFromName, extractNameOnly } from '../../../../../lib/stations';
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 // ===========================================
 // API: WEBHOOK NHẬN ĐƠN "DỌC ĐƯỜNG" TỪ NHẬP HÀNG
 // ===========================================

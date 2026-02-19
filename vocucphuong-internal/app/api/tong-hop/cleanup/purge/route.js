@@ -1,6 +1,8 @@
 import { queryTongHop } from '../../../../../lib/database';
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 // ===========================================
 // API: XÓA TẤT CẢ TIMESLOTS CŨ, GIỮ LẠI 7 NGÀY GẦN NHẤT
 // ===========================================

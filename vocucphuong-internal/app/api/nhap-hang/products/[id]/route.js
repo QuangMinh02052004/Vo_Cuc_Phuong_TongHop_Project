@@ -1,6 +1,8 @@
 import { queryNhapHang, queryOneNhapHang, queryTongHop } from '../../../../../lib/database';
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 // ===========================================
 // API: Products/[id] - Chi tiết đơn hàng
 // ===========================================

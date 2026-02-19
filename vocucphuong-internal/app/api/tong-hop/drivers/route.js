@@ -1,6 +1,8 @@
 import { queryTongHop } from '../../../../lib/database';
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const drivers = await queryTongHop('SELECT * FROM "TH_Drivers" ORDER BY name');

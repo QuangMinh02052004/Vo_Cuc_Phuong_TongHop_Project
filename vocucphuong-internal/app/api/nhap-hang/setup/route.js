@@ -1,6 +1,8 @@
 import { queryNhapHang, queryOneNhapHang } from '../../../../lib/database';
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 // ===========================================
 // API: SETUP DATABASE TABLES CHO NHẬP HÀNG
 // ===========================================

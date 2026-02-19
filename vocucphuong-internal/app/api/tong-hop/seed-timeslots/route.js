@@ -1,6 +1,8 @@
 import { queryTongHop, queryOneTongHop } from '../../../../lib/database';
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 // Các khung giờ cho tuyến Sài Gòn - Long Khánh
 const SGtoLK_times = [
   '05:30', '06:00', '06:30', '07:00', '07:30', '08:00', '08:30', '09:00', '09:30', '10:00',
