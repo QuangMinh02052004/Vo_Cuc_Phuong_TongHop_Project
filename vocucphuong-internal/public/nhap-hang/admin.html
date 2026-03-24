@@ -6,13 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quản lý tài khoản - CTY DV XE DU LỊCH VÕ CÚC PHƯƠNG</title>
     <link rel="icon" type="image/png" href="images/logo.png">
-    <link rel="stylesheet" href="css/styles.css?v=5.0">
+    <link rel="stylesheet" href="css/styles.css?v=6.0">
     <link rel="stylesheet" href="css/admin.css?v=2.0">
-    <style>.nav-switch-btn{position:fixed;bottom:20px;right:20px;z-index:9999;background:#fff;color:#2563eb;padding:10px 18px;border-radius:8px;border:2px solid #2563eb;text-decoration:none;font-weight:600;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,0.1)}.nav-switch-btn:hover{background:#2563eb;color:#fff}</style>
 </head>
 
 <body>
-    <a href="/tong-hop/index.html" class="nav-switch-btn">Tổng Hợp</a>
     <header class="header">
         <div class="container">
             <div class="header-top">
@@ -28,6 +26,8 @@
                 <a href="warehouse.html" class="nav-item">Kho hàng</a>
                 <a href="statistics.html" class="nav-item">Thống kê</a>
                 <a href="admin.html" class="nav-item active">Quản lý tài khoản</a>
+                <span class="nav-divider">|</span>
+                <a href="/tong-hop/index.html" class="nav-item nav-switch">Tổng Hợp</a>
             </nav>
         </div>
     </header>
@@ -132,8 +132,9 @@
         </div>
     </footer>
 
+    <script src="js/modal.js?v=2.0"></script>
     <script type="module" src="js/auth.js?v=3.0"></script>
-    <script type="module" src="js/admin.js?v=3.0"></script>
+    <script type="module" src="js/admin.js?v=3.1"></script>
 </body>
 
 </html>

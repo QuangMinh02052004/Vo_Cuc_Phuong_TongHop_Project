@@ -18,6 +18,30 @@ let unsubscribeProducts = null;
 let searchFilters = {}; // Bộ lọc tìm kiếm
 let isSubmitting = false; // Ngăn chặn submit nhiều lần liên tục
 
+// === Auto-format tiền VND (1000 → 1.000, 1000000 → 1.000.000) ===
+function formatVND(value) {
+    const num = String(value).replace(/\D/g, '');
+    if (!num) return '';
+    return new Intl.NumberFormat('vi-VN').format(parseInt(num));
+}
+
+function parseVND(formatted) {
+    return parseInt(String(formatted).replace(/\./g, '')) || 0;
+}
+
+function setupVNDInput(input) {
+    if (!input) return;
+    input.addEventListener('input', function () {
+        const raw = this.value.replace(/\D/g, '');
+        const pos = this.selectionStart;
+        const oldLen = this.value.length;
+        this.value = raw ? formatVND(raw) : '';
+        const newLen = this.value.length;
+        const newPos = Math.max(0, pos + (newLen - oldLen));
+        this.setSelectionRange(newPos, newPos);
+    });
+}
+
 // Khởi tạo khi tải trang
 document.addEventListener('DOMContentLoaded', async function () {
     // Kiểm tra authentication
@@ -44,27 +68,38 @@ document.addEventListener('DOMContentLoaded', async function () {
     document.getElementById('searchForm').addEventListener('submit', handleSearch);
     document.getElementById('resetSearchBtn').addEventListener('click', resetSearch);
 
-    // Lắng nghe sự thay đổi của trạm để sinh mã tự động
-    document.getElementById('station').addEventListener('change', async function () {
-        const station = this.value;
-        if (station && !editingProductId) {
-            const nextId = await getNextCounterForStation(station);
-            document.getElementById('productId').value = nextId;
+    // Khi đổi trạm nhận, refresh mã preview (dùng trạm NHẬN)
+    document.getElementById('station').addEventListener('change', function () {
+        if (!editingProductId) {
+            generateProductId(); // Dùng trạm nhận từ dropdown
         }
     });
 
     // Xử lý submit form - Hiện modal thay vì submit trực tiếp
     document.getElementById('productForm').addEventListener('submit', function (e) {
         e.preventDefault();
-        showConfirmModal();
+        showProductConfirmModal();
     });
 
-    // Xử lý phím Enter trong form - Hiện modal
+    // Xử lý phím Enter trong form
+    // - Đang chỉnh sửa: Enter 1 lần → lưu trực tiếp (không cần modal)
+    // - Thêm mới: Enter → hiện modal xác nhận
     document.getElementById('productForm').addEventListener('keydown', function (e) {
         if (e.key === 'Enter') {
             e.preventDefault();
-            e.stopPropagation(); // Ngăn event lan ra ngoài
-            showConfirmModal();
+            e.stopPropagation();
+            if (editingProductId) {
+                // Đang edit → lưu trực tiếp
+                const form = document.getElementById('productForm');
+                if (!form.checkValidity()) {
+                    form.reportValidity();
+                    return;
+                }
+                handleSubmit(false);
+            } else {
+                // Thêm mới → hiện modal
+                showProductConfirmModal();
+            }
         }
     });
 
@@ -185,64 +220,32 @@ function resetSearch() {
     renderTable();
 }
 
-// Hàm sinh mã hàng tự động theo trạm và ngày
+// Hàm sinh mã hàng tự động - dùng TRẠM NHẬN (từ dropdown)
+// Format: YYMMDD.SSNN (SS = mã trạm nhận, NN = số thứ tự)
 function generateProductId() {
-    // Hiển thị placeholder trước
-    document.getElementById('productId').value = 'Chọn trạm để sinh mã';
-    document.getElementById('productId').placeholder = 'Chọn trạm trước';
-}
-
-// Hàm sinh mã cho từng trạm (với Firebase)
-async function generateProductIdForStation(station) {
-    if (!station) {
+    const receivingStation = document.getElementById('station').value;
+    if (receivingStation) {
+        getNextCounterFromServer(receivingStation);
+    } else {
         document.getElementById('productId').value = 'Chọn trạm để sinh mã';
-        return null;
     }
-
-    // Lấy mã trạm (số đầu tiên) từ giá trị "05 - XUÂN TRƯỜNG" -> "05"
-    const stationCode = station.split(' - ')[0];
-
-    const now = new Date();
-    const year = now.getFullYear().toString().slice(-2);
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const dateKey = `${year}${month}${day}`;
-
-    // Tăng counter trên Firestore với mã trạm
-    const counter = await incrementCounter(stationCode, dateKey);
-
-    if (counter === null) {
-        console.error('Failed to increment counter');
-        return null;
-    }
-
-    // Format: YYMMDD.SSNN (ví dụ: 251119.0501)
-    // SS = Station Code (2 digits), NN = Sequence (no padding)
-    const stationCodePadded = stationCode.padStart(2, '0');
-    const productId = `${dateKey}.${stationCodePadded}${counter}`;
-
-    document.getElementById('productId').value = productId;
-    return productId;
 }
 
-// Lấy counter hiện tại của trạm (không tăng)
-async function getNextCounterForStation(station) {
-    if (!station) return null;
-
-    // Lấy mã trạm (số đầu tiên) từ giá trị "05 - XUÂN TRƯỜNG" -> "05"
-    const stationCode = station.split(' - ')[0];
-
-    const now = new Date();
-    const year = now.getFullYear().toString().slice(-2);
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const dateKey = `${year}${month}${day}`;
-
-    const counter = await getCounter(stationCode, dateKey);
-    const nextCounter = counter + 1;
-
-    const stationCodePadded = stationCode.padStart(2, '0');
-    return `${dateKey}.${stationCodePadded}${nextCounter}`;
+// Gọi server API để lấy mã tiếp theo (dựa trên trạm NHẬN)
+async function getNextCounterFromServer(stationFullName) {
+    if (!stationFullName) return null;
+    const stationCode = stationFullName.split(' - ')[0];
+    try {
+        const response = await fetch(`/api/nhap-hang/counters?station=${encodeURIComponent(stationCode)}`);
+        const data = await response.json();
+        if (data.success) {
+            document.getElementById('productId').value = data.data.nextProductId;
+            return data.data.nextProductId;
+        }
+    } catch (error) {
+        console.error('Error getting next counter:', error);
+    }
+    return null;
 }
 
 // Lấy thời gian hiện tại
@@ -258,7 +261,7 @@ function getCurrentDateTime() {
 }
 
 // Hiện modal xác nhận
-function showConfirmModal() {
+function showProductConfirmModal() {
     // Kiểm tra validation trước khi hiện modal
     const form = document.getElementById('productForm');
     if (!form.checkValidity()) {
@@ -293,7 +296,7 @@ async function handleSubmit(shouldPrint = false) {
 
     // Kiểm tra trạm đã chọn chưa
     if (!station) {
-        alert('Vui lòng chọn trạm nhận trước!');
+        showAlertModal('Vui lòng chọn trạm nhận trước!', { title: 'Thiếu thông tin', type: 'warning' });
         return;
     }
 
@@ -315,7 +318,7 @@ async function handleSubmit(shouldPrint = false) {
     try {
         const currentUser = getCurrentUser();
 
-        const totalAmount = parseInt(document.getElementById('totalAmount').value) || 0;
+        const totalAmount = (window.parseVNDCurrency || parseVND)(document.getElementById('totalAmount').value);
 
         // Xác định trạng thái thanh toán
         // 1-99: Chưa thanh toán
@@ -389,21 +392,15 @@ async function handleSubmit(shouldPrint = false) {
                 sendDate: formData.sendDate
             };
 
-            // Reload danh sách products để hiển thị sản phẩm mới
-            await loadProducts();
-            renderTable();
-
-            // In biên lai nếu người dùng chọn (TRƯỚC KHI reset form)
-            console.log('🖨️ [DEBUG] shouldPrint =', shouldPrint, ', productToPrint exists =', !!productToPrint);
+            // ⚡ IN BIÊN LAI NGAY LẬP TỨC (không chờ load/reset)
             if (shouldPrint && productToPrint) {
-                console.log('🖨️ [DEBUG] Calling printReceipt...');
+                console.log('🖨️ [FAST] Printing receipt immediately...');
                 printReceipt(productToPrint);
-            } else {
-                console.log('🖨️ [DEBUG] NOT printing - skipped');
             }
 
-            // Reset form và tạo mã mới (SAU KHI in)
-            await resetForm();
+            // Load & reset chạy nền (không block)
+            loadProducts().then(() => renderTable()).catch(err => console.error('Load error:', err));
+            resetForm().catch(err => console.error('Reset error:', err));
         }
     } finally {
         // ✅ LUÔN RESET FLAG VÀ ENABLE BUTTONS LẠI (dù success hay error)
@@ -586,13 +583,11 @@ async function resetForm() {
     document.getElementById('productForm').reset();
     editingProductId = null;
 
-    // Nếu có trạm đã chọn, khôi phục và tạo mã mới
+    // Khôi phục trạm đã chọn và sinh mã mới (dùng trạm NHẬN)
     if (currentStation) {
         document.getElementById('station').value = currentStation;
-        await generateProductIdForStation(currentStation);
-    } else {
-        generateProductId();
     }
+    generateProductId();
 
     // Xóa highlight nếu có
     const editRows = document.querySelectorAll('.edit-mode');
@@ -760,12 +755,39 @@ function renderTable() {
             const formattedDate = formatDateTime(product.sendDate || new Date().toISOString());
             const productAmount = parseInt(product.totalAmount) || 0;
             const formattedAmount = formatCurrency(productAmount);
+            const isCancelled = product.status === 'cancelled';
 
             // Xác định trạng thái thanh toán (nếu chưa có trong data)
             const paymentStatus = product.paymentStatus || (productAmount >= 10000 ? 'paid' : 'unpaid');
-            const paymentStatusText = paymentStatus === 'paid' ?
-                '<span class="status-paid">Đã thanh toán</span>' :
-                '<span class="status-unpaid">Chưa thanh toán</span>';
+            const paymentStatusText = isCancelled
+                ? '<span class="status-cancelled">Đã hủy</span>'
+                : paymentStatus === 'paid'
+                    ? '<span class="status-paid">Đã thanh toán</span>'
+                    : '<span class="status-unpaid">Chưa thanh toán</span>';
+
+            // Đơn hủy: không cho click, không cho chỉnh sửa
+            if (isCancelled) {
+                return `
+                <tr data-id="${product.id || 'unknown'}" class="row-cancelled">
+                    <td data-label="">-</td>
+                    <td data-label="STT">${index + 1}</td>
+                    <td data-label="Mã" class="product-code">${product.id || '-'}</td>
+                    <td data-label="Người gởi">${product.senderName || '-'}</td>
+                    <td data-label="SĐT gởi">${product.senderPhone || '-'}</td>
+                    <td data-label="Người nhận">${product.receiverName || '-'}</td>
+                    <td data-label="SĐT nhận">${product.receiverPhone || '-'}</td>
+                    <td data-label="Trạm nhận">${product.station || '-'}</td>
+                    <td data-label="Ngày gởi">${formattedDate}</td>
+                    <td data-label="Xe">${product.vehicle || '-'}</td>
+                    <td data-label="Loại hàng">${product.productType || '-'}</td>
+                    <td data-label="Số lượng">${product.quantity || '-'}</td>
+                    <td data-label="Tổng tiền">${formattedAmount}</td>
+                    <td data-label="Thanh toán">${paymentStatusText}</td>
+                    <td data-label="Nhân viên">${product.employee || '-'}</td>
+                    <td data-label="" class="action-cell">-</td>
+                </tr>
+                `;
+            }
 
             return `
             <tr data-id="${product.id || 'unknown'}"
@@ -805,6 +827,11 @@ function renderTable() {
     // Kết hợp form input row với data rows
     tbody.innerHTML = formInputRowHTML + dataRowsHTML;
 
+    // Re-attach VND formatting sau khi render lại DOM
+    if (window.setupVNDCurrencyInput) {
+        window.setupVNDCurrencyInput(document.getElementById('totalAmount'));
+    }
+
     // Cập nhật thống kê
     updateStatistics(filteredProducts);
 }
@@ -830,16 +857,17 @@ function updateStatistics(filteredProducts = null) {
         });
     }
 
-    // Tính toán các chỉ số
-    const totalShipments = filteredProducts.length;
+    // Loại bỏ đơn hủy khỏi thống kê
+    const activeProducts = filteredProducts.filter(p => p.status !== 'cancelled');
+    const totalShipments = activeProducts.length;
 
-    const paidProducts = filteredProducts.filter(p => {
+    const paidProducts = activeProducts.filter(p => {
         const amount = parseInt(p.totalAmount) || 0;
         const status = p.paymentStatus || (amount >= 10000 ? 'paid' : 'unpaid');
         return status === 'paid';
     });
 
-    const unpaidProducts = filteredProducts.filter(p => {
+    const unpaidProducts = activeProducts.filter(p => {
         const amount = parseInt(p.totalAmount) || 0;
         const status = p.paymentStatus || (amount >= 10000 ? 'paid' : 'unpaid');
         return status === 'unpaid';
@@ -848,8 +876,8 @@ function updateStatistics(filteredProducts = null) {
     const totalPaidCustomers = paidProducts.length;
     const totalUnpaidCustomers = unpaidProducts.length;
 
-    const totalPaidAmount = paidProducts.reduce((sum, p) => sum + (parseInt(p.totalAmount) || 0), 0);
-    const totalUnpaidAmount = unpaidProducts.reduce((sum, p) => sum + (parseInt(p.totalAmount) || 0), 0);
+    const totalPaidAmount = paidProducts.reduce((sum, p) => sum + (parseFloat(p.totalAmount) || 0), 0);
+    const totalUnpaidAmount = unpaidProducts.reduce((sum, p) => sum + (parseFloat(p.totalAmount) || 0), 0);
     const totalAmount = totalPaidAmount + totalUnpaidAmount;
 
     // Cập nhật UI - Thiết kế đơn giản, gọn gàng
@@ -893,7 +921,7 @@ function editProduct(id) {
     document.getElementById('productType').value = product.productType;
     document.getElementById('quantity').value = product.quantity || '';
     document.getElementById('insurance').value = product.insurance;
-    document.getElementById('totalAmount').value = product.totalAmount;
+    document.getElementById('totalAmount').value = (window.formatVNDCurrency || formatVND)(product.totalAmount);
 
     editingProductId = id;
 
@@ -909,22 +937,82 @@ function editProduct(id) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// Xóa sản phẩm
+// Hủy sản phẩm (soft delete) - hiện modal xác nhận có ô ghi chú
 async function deleteProductHandler(id) {
-    if (confirm('Bạn có chắc chắn muốn xóa hàng hóa này?')) {
-        const result = await deleteProduct(id);
+    const product = products.find(p => p.id === id);
+    const productInfo = product ? `<b>${product.id}</b> - ${product.receiverName || 'N/A'}` : id;
 
-        if (result.success) {
-            showNotification('Xóa hàng hóa thành công!', 'success');
+    const result = await showCancelModal(productInfo);
+    if (result.confirmed) {
+        const deleteResult = await deleteProduct(id, result.note);
 
-            // Reset form nếu đang edit sản phẩm bị xóa
+        if (deleteResult.success) {
+            // Cập nhật status ngay trong mảng local → render lại liền
+            const idx = products.findIndex(p => p.id === id);
+            if (idx !== -1) {
+                products[idx].status = 'cancelled';
+            }
+            renderTable();
+
+            showNotification('Đã hủy đơn hàng!', 'success');
+
+            // Reset form nếu đang edit sản phẩm bị hủy
             if (editingProductId === id) {
                 resetForm();
             }
         } else {
-            showNotification('Lỗi xóa: ' + result.error, 'error');
+            showNotification('Lỗi hủy: ' + deleteResult.error, 'error');
         }
     }
+}
+
+// Modal xác nhận hủy đơn hàng (có ô ghi chú)
+function showCancelModal(productInfo) {
+    return new Promise((resolve) => {
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+        overlay.innerHTML = `
+            <div class="modal-box">
+                <div class="modal-icon danger">🗑️</div>
+                <div class="modal-title">Hủy đơn hàng</div>
+                <div class="modal-message">
+                    Bạn có chắc chắn muốn hủy đơn hàng ${productInfo}?<br>
+                    <small style="color: #6B7280;">Đơn hàng sẽ không bị xóa mà chỉ đánh dấu là đã hủy.</small>
+                </div>
+                <div style="margin: 12px 0;">
+                    <input type="text" id="cancelNote" placeholder="Lý do hủy (không bắt buộc)"
+                        style="width: 100%; padding: 10px 12px; border: 1px solid #D1D5DB; border-radius: 8px; font-size: 14px; outline: none;">
+                </div>
+                <div class="modal-actions">
+                    <button class="modal-btn cancel" id="modalCancel">Đóng</button>
+                    <button class="modal-btn danger" id="modalConfirm">Hủy đơn</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(overlay);
+        overlay.querySelector('#cancelNote').focus();
+
+        const close = (confirmed) => {
+            const note = overlay.querySelector('#cancelNote').value.trim();
+            overlay.style.animation = 'modalFadeIn 0.15s ease reverse';
+            setTimeout(() => {
+                overlay.remove();
+                resolve({ confirmed, note });
+            }, 150);
+        };
+
+        overlay.querySelector('#modalCancel').addEventListener('click', () => close(false));
+        overlay.querySelector('#modalConfirm').addEventListener('click', () => close(true));
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) close(false);
+        });
+
+        const handleKey = (e) => {
+            if (e.key === 'Escape') { close(false); document.removeEventListener('keydown', handleKey); }
+        };
+        document.addEventListener('keydown', handleKey);
+    });
 }
 
 // Format ngày giờ
@@ -941,7 +1029,8 @@ function formatDateTime(dateTimeString) {
 
 // Format tiền tệ
 function formatCurrency(amount) {
-    return new Intl.NumberFormat('vi-VN').format(amount);
+    const num = parseFloat(amount) || 0;
+    return new Intl.NumberFormat('vi-VN').format(num);
 }
 
 // Hiển thị thông báo
@@ -1078,10 +1167,15 @@ function enableInlineEdit(row, event) {
         } else {
             // Create text or number input
             const input = document.createElement('input');
-            input.type = field === 'totalAmount' ? 'number' :
+            input.type = field === 'totalAmount' ? 'text' :
                 (field.includes('Phone') ? 'tel' : 'text');
             input.className = 'editable-input';
-            input.value = value;
+            if (field === 'totalAmount') {
+                input.inputMode = 'numeric';
+                input.value = formatVND(value);
+            } else {
+                input.value = value;
+            }
 
             // Auto-save on Enter key
             input.addEventListener('keydown', (e) => {
@@ -1092,6 +1186,11 @@ function enableInlineEdit(row, event) {
                     cancelInlineEdit();
                 }
             });
+
+            // Auto-format VND for totalAmount
+            if (field === 'totalAmount') {
+                setupVNDInput(input);
+            }
 
             cell.innerHTML = '';
             cell.appendChild(input);
@@ -1167,9 +1266,9 @@ async function saveInlineEdit(productId) {
         if (input) {
             let value = input.value;
 
-            // Convert totalAmount to number
+            // Convert totalAmount to number (strip VND formatting)
             if (field === 'totalAmount') {
-                value = parseFloat(value) || 0;
+                value = parseVND(value);
             }
 
             updates[field] = value;
@@ -1380,7 +1479,7 @@ function printProductReceipt(productId) {
     const product = products.find(p => p.id === productId);
 
     if (!product) {
-        alert('Không tìm thấy đơn hàng!');
+        showAlertModal('Không tìm thấy đơn hàng!', { title: 'Lỗi', type: 'danger' });
         return;
     }
 

@@ -72,6 +72,21 @@ function exportToCSV(stats) {
   link.click();
 }
 
+// Login styles
+const loginStyles = {
+  overlay: { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f1f5f9', fontFamily: 'system-ui, -apple-system, sans-serif' },
+  card: { backgroundColor: '#fff', borderRadius: '16px', padding: '40px', width: '100%', maxWidth: '400px', boxShadow: '0 4px 24px rgba(0,0,0,0.1)', margin: '20px' },
+  title: { fontSize: '24px', fontWeight: '700', color: '#1e293b', textAlign: 'center', marginBottom: '8px' },
+  subtitle: { fontSize: '14px', color: '#64748b', textAlign: 'center', marginBottom: '32px' },
+  label: { display: 'block', fontSize: '14px', fontWeight: '500', color: '#334155', marginBottom: '6px' },
+  input: { width: '100%', padding: '10px 14px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', outline: 'none', boxSizing: 'border-box', marginBottom: '16px' },
+  btn: { width: '100%', padding: '12px', backgroundColor: '#0284c7', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: '600', cursor: 'pointer' },
+  btnDisabled: { opacity: 0.6, cursor: 'not-allowed' },
+  error: { backgroundColor: '#fef2f2', color: '#dc2626', padding: '10px 14px', borderRadius: '8px', fontSize: '13px', marginBottom: '16px', textAlign: 'center' },
+  accessDenied: { textAlign: 'center', color: '#dc2626', fontSize: '16px', fontWeight: '600', marginBottom: '16px' },
+  logoutBtn: { padding: '10px 20px', backgroundColor: '#ef4444', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' },
+};
+
 // Styles
 const styles = {
   container: { minHeight: '100vh', backgroundColor: '#f8fafc', fontFamily: 'system-ui, -apple-system, sans-serif' },
@@ -164,6 +179,83 @@ const styles = {
 const DEFAULT_TARGET = 50000000; // 50 triệu / tháng
 
 export default function DashboardPage() {
+  // === Auth state ===
+  const [authUser, setAuthUser] = useState(null); // null = chưa xác thực
+  const [authChecking, setAuthChecking] = useState(true);
+  const [loginUsername, setLoginUsername] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
+  const [loginLoading, setLoginLoading] = useState(false);
+
+  // Kiểm tra token khi load trang
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = localStorage.getItem('dashboard_token');
+      if (!token) {
+        setAuthChecking(false);
+        return;
+      }
+      try {
+        const res = await fetch('/api/tong-hop/auth/me', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (data.success && data.user) {
+          setAuthUser(data.user);
+        } else {
+          localStorage.removeItem('dashboard_token');
+          localStorage.removeItem('dashboard_user');
+        }
+      } catch {
+        localStorage.removeItem('dashboard_token');
+        localStorage.removeItem('dashboard_user');
+      }
+      setAuthChecking(false);
+    };
+    checkAuth();
+  }, []);
+
+  // Đăng nhập
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoginError('');
+    setLoginLoading(true);
+    try {
+      const res = await fetch('/api/tong-hop/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: loginUsername, password: loginPassword }),
+      });
+      const data = await res.json();
+      if (data.success && data.token) {
+        if (data.user.role !== 'admin') {
+          setLoginError('Chỉ tài khoản admin mới được xem báo cáo');
+          setLoginLoading(false);
+          return;
+        }
+        localStorage.setItem('dashboard_token', data.token);
+        localStorage.setItem('dashboard_user', JSON.stringify(data.user));
+        setAuthUser(data.user);
+      } else {
+        setLoginError(data.error || 'Đăng nhập thất bại');
+      }
+    } catch {
+      setLoginError('Lỗi kết nối. Vui lòng thử lại.');
+    }
+    setLoginLoading(false);
+  };
+
+  // Đăng xuất
+  const handleLogout = () => {
+    localStorage.removeItem('dashboard_token');
+    localStorage.removeItem('dashboard_user');
+    setAuthUser(null);
+    setLoginUsername('');
+    setLoginPassword('');
+    setLoginError('');
+  };
+
+  // === Dashboard state ===
   const [period, setPeriod] = useState('week');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [quickDate, setQuickDate] = useState('7days');
@@ -264,8 +356,11 @@ export default function DashboardPage() {
 
   const modalTotals = filteredModalData.reduce((acc, item) => {
     if (modalType === 'nhaphang') {
-      acc.total += Number(item.totalAmount) || 0;
-      acc.paid += item.paymentStatus === 'paid' ? (Number(item.totalAmount) || 0) : 0;
+      // Bỏ qua đơn đã hủy khi tính tổng
+      if (item.status !== 'cancelled') {
+        acc.total += Number(item.totalAmount) || 0;
+        acc.paid += item.paymentStatus === 'paid' ? (Number(item.totalAmount) || 0) : 0;
+      }
     } else if (modalType === 'datve') {
       acc.total += Number(item.total_price) || 0;
       acc.paid += Number(item.paid_amount) || 0;
@@ -414,6 +509,59 @@ export default function DashboardPage() {
     );
   };
 
+  // === Auth gate: đang kiểm tra ===
+  if (authChecking) {
+    return (
+      <div style={loginStyles.overlay}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ width: '40px', height: '40px', border: '4px solid #e2e8f0', borderTop: '4px solid #0284c7', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 16px' }}></div>
+          <p style={{ color: '#64748b', fontSize: '14px' }}>Đang kiểm tra đăng nhập...</p>
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
+      </div>
+    );
+  }
+
+  // === Auth gate: chưa đăng nhập ===
+  if (!authUser) {
+    return (
+      <div style={loginStyles.overlay}>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        <div style={loginStyles.card}>
+          <h1 style={loginStyles.title}>📊 Báo Cáo Doanh Thu</h1>
+          <p style={loginStyles.subtitle}>Đăng nhập để xem báo cáo</p>
+          {loginError && <div style={loginStyles.error}>{loginError}</div>}
+          <form onSubmit={handleLogin}>
+            <label style={loginStyles.label}>Tên đăng nhập</label>
+            <input style={loginStyles.input} type="text" value={loginUsername} onChange={e => setLoginUsername(e.target.value)} placeholder="Nhập tên đăng nhập" autoFocus />
+            <label style={loginStyles.label}>Mật khẩu</label>
+            <input style={loginStyles.input} type="password" value={loginPassword} onChange={e => setLoginPassword(e.target.value)} placeholder="Nhập mật khẩu" />
+            <button type="submit" style={{ ...loginStyles.btn, ...(loginLoading ? loginStyles.btnDisabled : {}) }} disabled={loginLoading}>
+              {loginLoading ? 'Đang đăng nhập...' : 'Đăng nhập'}
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  // === Auth gate: không phải admin ===
+  if (authUser.role !== 'admin') {
+    return (
+      <div style={loginStyles.overlay}>
+        <div style={loginStyles.card}>
+          <p style={loginStyles.accessDenied}>⛔ Bạn không có quyền truy cập</p>
+          <p style={{ textAlign: 'center', color: '#64748b', fontSize: '14px', marginBottom: '20px' }}>
+            Chỉ tài khoản admin mới được xem báo cáo.<br />Đang đăng nhập: <strong>{authUser.fullName || authUser.username}</strong> ({authUser.role})
+          </p>
+          <div style={{ textAlign: 'center' }}>
+            <button onClick={handleLogout} style={loginStyles.logoutBtn}>Đăng xuất</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={styles.container}>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
@@ -424,6 +572,7 @@ export default function DashboardPage() {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           {stats && <button style={styles.exportBtn} onClick={() => exportToCSV(stats)}>↓ Xuất Báo Cáo</button>}
+          <button onClick={handleLogout} style={{ padding: '8px 14px', backgroundColor: '#ef4444', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '500', cursor: 'pointer' }} title={`Đăng xuất (${authUser.fullName || authUser.username})`}>🔓 Đăng xuất</button>
           <span style={{ fontSize: '14px', color: '#64748b' }}>CÔNG TY TNHH VÕ CÚC PHƯƠNG</span>
         </div>
       </header>

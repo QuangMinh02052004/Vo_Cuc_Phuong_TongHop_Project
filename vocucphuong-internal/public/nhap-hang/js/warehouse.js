@@ -10,6 +10,30 @@ let allProducts = [];
 let currentUserStation = '';
 let searchFilters = {}; // Bộ lọc tìm kiếm
 
+// === Auto-format tiền VND (1000 → 1.000, 1000000 → 1.000.000) ===
+function formatVND(value) {
+    const num = String(value).replace(/\D/g, '');
+    if (!num) return '';
+    return new Intl.NumberFormat('vi-VN').format(parseInt(num));
+}
+
+function parseVND(formatted) {
+    return parseInt(String(formatted).replace(/\./g, '')) || 0;
+}
+
+function setupVNDInput(input) {
+    if (!input) return;
+    input.addEventListener('input', function () {
+        const raw = this.value.replace(/\D/g, '');
+        const pos = this.selectionStart;
+        const oldLen = this.value.length;
+        this.value = raw ? formatVND(raw) : '';
+        const newLen = this.value.length;
+        const newPos = Math.max(0, pos + (newLen - oldLen));
+        this.setSelectionRange(newPos, newPos);
+    });
+}
+
 // Khởi tạo
 document.addEventListener('DOMContentLoaded', async function () {
     // Lấy thông tin user hiện tại
@@ -278,10 +302,10 @@ function renderWarehouseStatistics() {
     const deliveredAndPaid = filteredProducts.filter(p =>
         p.deliveryStatus === 'delivered' && p.paymentStatus === 'paid'
     );
-    const totalCollectedAmount = deliveredAndPaid.reduce((sum, p) => sum + (p.totalAmount || 0), 0);
+    const totalCollectedAmount = deliveredAndPaid.reduce((sum, p) => sum + (parseFloat(p.totalAmount) || 0), 0);
 
     // Tổng giá trị tất cả đơn hàng
-    const totalAmount = filteredProducts.reduce((sum, p) => sum + (p.totalAmount || 0), 0);
+    const totalAmount = filteredProducts.reduce((sum, p) => sum + (parseFloat(p.totalAmount) || 0), 0);
 
     // Số đơn chưa giao/chưa thu
     const pendingCount = filteredProducts.filter(p => p.deliveryStatus !== 'delivered').length;
@@ -311,7 +335,8 @@ function renderWarehouseStatistics() {
 
 // Format tiền tệ
 function formatCurrency(amount) {
-    return new Intl.NumberFormat('vi-VN').format(amount || 0);
+    const num = parseFloat(amount) || 0;
+    return new Intl.NumberFormat('vi-VN').format(num);
 }
 
 // Format station name - remove number prefix
@@ -393,7 +418,7 @@ async function selectStatus(status) {
 
         // Đặt giá trị mặc định là tổng tiền của đơn hàng (hoặc 0)
         const amountInput = document.getElementById('deliveredAmount');
-        amountInput.value = currentEditingProduct.totalAmount || 0;
+        amountInput.value = (window.formatVNDCurrency || formatVND)(currentEditingProduct.totalAmount || 0);
         document.getElementById('deliveredNote').value = currentEditingProduct.notes || '';
         // Focus và select all để có thể nhập ngay
         setTimeout(() => {
@@ -414,8 +439,8 @@ async function confirmDelivered() {
     const amount = document.getElementById('deliveredAmount').value;
     const note = document.getElementById('deliveredNote').value;
 
-    // Không cho phép số tiền = 0
-    const parsedAmount = parseFloat(amount) || 0;
+    // Không cho phép số tiền = 0 (strip VND formatting)
+    const parsedAmount = (window.parseVNDCurrency || parseVND)(amount);
     if (parsedAmount <= 0) {
         showToast('Vui lòng nhập số tiền đã thu (phải lớn hơn 0đ)', 'error');
         document.getElementById('deliveredAmount').focus();
@@ -472,6 +497,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const noteInput = document.getElementById('deliveredNote');
 
     if (amountInput) {
+        setupVNDInput(amountInput);
         amountInput.addEventListener('focus', function() {
             this.select();
         });

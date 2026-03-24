@@ -14,6 +14,18 @@ document.addEventListener('DOMContentLoaded', async function () {
     populateSelect('searchStation', OPTIONS.stations);
     populateSelect('searchDestStation', OPTIONS.stations);
 
+    // Set default date filter to today
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    const todayStart = `${yyyy}-${mm}-${dd}T00:00`;
+    const todayEnd = `${yyyy}-${mm}-${dd}T23:59`;
+
+    document.getElementById('searchDateFrom').value = todayStart;
+    document.getElementById('searchDateTo').value = todayEnd;
+    searchFilters = { dateFrom: todayStart, dateTo: todayEnd };
+
     // Render table and statistics
     renderStatisticsTable();
     renderStatistics();
@@ -161,7 +173,8 @@ function formatStationName(station) {
 
 // Format currency
 function formatCurrency(amount) {
-    return new Intl.NumberFormat('vi-VN').format(amount);
+    const num = parseFloat(amount) || 0;
+    return new Intl.NumberFormat('vi-VN').format(num);
 }
 
 // Format date time
@@ -229,9 +242,9 @@ function renderStatistics() {
     const deliveredProducts = filteredProducts.filter(p => p.deliveryStatus === 'delivered');
     const pendingProducts = filteredProducts.filter(p => !p.deliveryStatus || p.deliveryStatus === 'pending');
 
-    const totalAmount = filteredProducts.reduce((sum, p) => sum + (p.totalAmount || 0), 0);
-    const deliveredAmount = deliveredProducts.reduce((sum, p) => sum + (p.totalAmount || 0), 0);
-    const pendingAmount = pendingProducts.reduce((sum, p) => sum + (p.totalAmount || 0), 0);
+    const totalAmount = filteredProducts.reduce((sum, p) => sum + (parseFloat(p.totalAmount) || 0), 0);
+    const deliveredAmount = deliveredProducts.reduce((sum, p) => sum + (parseFloat(p.totalAmount) || 0), 0);
+    const pendingAmount = pendingProducts.reduce((sum, p) => sum + (parseFloat(p.totalAmount) || 0), 0);
 
     statsElement.innerHTML = `
         <div class="stats-summary">

@@ -6,12 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kho hàng - CTY DV XE DU LỊCH VÕ CÚC PHƯƠNG</title>
     <link rel="icon" type="image/png" href="images/logo.png">
-    <link rel="stylesheet" href="css/styles.css?v=5.0">
-    <style>.nav-switch-btn{position:fixed;bottom:20px;right:20px;z-index:9999;background:#fff;color:#2563eb;padding:10px 18px;border-radius:8px;border:2px solid #2563eb;text-decoration:none;font-weight:600;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,0.1)}.nav-switch-btn:hover{background:#2563eb;color:#fff}</style>
+    <link rel="stylesheet" href="css/styles.css?v=6.0">
 </head>
 
 <body>
-    <a href="/tong-hop/index.html" class="nav-switch-btn">Tổng Hợp</a>
     <header class="header">
         <div class="container">
             <div class="header-top">
@@ -31,6 +29,8 @@
                     <a href="warehouse.html" class="nav-item active">Kho hàng</a>
                     <a href="statistics.html" class="nav-item">Thống kê</a>
                     <a href="logs.html" class="nav-item">Lịch sử</a>
+                    <span class="nav-divider">|</span>
+                    <a href="/tong-hop/index.html" class="nav-item nav-switch">Tổng Hợp</a>
                 </div>
                 <div class="nav-right">
                     <span class="station-badge">Trạm: <strong class="station-name"
@@ -147,7 +147,7 @@
                     </div>
                     <hr style="margin: 15px 0; border-color: #e5e7eb;">
                     <label>Số tiền đã thu:</label>
-                    <input type="number" id="deliveredAmount" placeholder="Nhập số tiền đã thu" min="0">
+                    <input type="text" id="deliveredAmount" placeholder="Nhập số tiền đã thu" inputmode="numeric">
                     <label style="margin-top: 10px;">Ghi chú:</label>
                     <input type="text" id="deliveredNote" placeholder="Ghi chú (tùy chọn)">
                     <button class="btn-confirm-delivered" onclick="confirmDelivered()">Xác nhận đã giao</button>
@@ -165,8 +165,9 @@
         </div>
     </footer>
 
+    <script src="js/modal.js?v=2.0"></script>
     <script type="module" src="js/auth.js?v=4.0"></script>
-    <script type="module" src="js/warehouse.js?v=4.1"></script>
+    <script type="module" src="js/warehouse.js?v=4.2"></script>
 </body>
 
 </html>

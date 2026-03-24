@@ -106,6 +106,7 @@ export async function GET(request) {
         COUNT(CASE WHEN status = 'pending' THEN 1 END) as "pendingOrders"
       FROM "Products"
       WHERE DATE("sendDate") >= $1 AND DATE("sendDate") <= $2
+        AND (status IS NULL OR status != 'cancelled')
     `, [startDate, endDate]);
 
     // Thống kê theo trạm
@@ -116,6 +117,7 @@ export async function GET(request) {
         COALESCE(SUM("totalAmount"), 0) as revenue
       FROM "Products"
       WHERE DATE("sendDate") >= $1 AND DATE("sendDate") <= $2
+        AND (status IS NULL OR status != 'cancelled')
       GROUP BY station
       ORDER BY revenue DESC
       LIMIT 10
@@ -129,6 +131,7 @@ export async function GET(request) {
         COALESCE(SUM("totalAmount"), 0) as revenue
       FROM "Products"
       WHERE DATE("sendDate") >= $1 AND DATE("sendDate") <= $2
+        AND (status IS NULL OR status != 'cancelled')
       GROUP BY DATE("sendDate")
       ORDER BY date ASC
     `, [startDate, endDate]);
@@ -142,6 +145,7 @@ export async function GET(request) {
         COUNT(*) as "totalOrders"
       FROM "Products"
       WHERE DATE("sendDate") >= $1 AND DATE("sendDate") <= $2
+        AND (status IS NULL OR status != 'cancelled')
     `, [prevStartDate, prevEndDate]);
 
     // =====================

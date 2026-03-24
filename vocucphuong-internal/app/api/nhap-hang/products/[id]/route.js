@@ -211,13 +211,14 @@ export async function PUT(request, { params }) {
   }
 }
 
-// DELETE - Xóa đơn hàng
+// DELETE - Hủy đơn hàng (soft delete: đánh dấu status = 'cancelled')
 export async function DELETE(request, { params }) {
   try {
     const { id } = await params;
     const clientIP = getClientIP(request);
     const { searchParams } = new URL(request.url);
     const changedBy = searchParams.get('changedBy') || 'system';
+    const cancelNote = searchParams.get('cancelNote') || '';
 
     // Get current product
     const existing = await queryOneNhapHang(`
@@ -244,23 +245,24 @@ export async function DELETE(request, { params }) {
       }
     }
 
-    // Log deletion before deleting
-    const productInfo = {
-      receiverName: existing.receiverName,
-      receiverPhone: existing.receiverPhone,
-      totalAmount: existing.totalAmount
-    };
-    await logProductChange(id, 'delete', 'product_info', JSON.stringify(productInfo), null, changedBy, clientIP);
+    // Log cancellation (kèm ghi chú nếu có)
+    const logNote = cancelNote ? `cancelled - ${cancelNote}` : 'cancelled';
+    await logProductChange(id, 'cancel', 'status', existing.status || 'active', logNote, changedBy, clientIP);
 
-    // Delete product
-    await queryNhapHang(`
-      DELETE FROM "Products" WHERE id = $1
+    // Soft delete: đánh dấu cancelled thay vì xóa thật
+    const result = await queryNhapHang(`
+      UPDATE "Products" SET status = 'cancelled', "updatedAt" = NOW()
+      WHERE id = $1 RETURNING *
     `, [id]);
+
+    const updatedProduct = result[0];
+    const sanitizedProduct = sanitizeSendDate({ ...updatedProduct });
 
     return NextResponse.json({
       success: true,
-      message: 'Xóa thành công!',
-      deletedId: id
+      message: 'Đã hủy đơn hàng!',
+      deletedId: id,
+      product: sanitizedProduct
     });
 
   } catch (error) {

@@ -10,8 +10,11 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request) {
   try {
-    // Get stats for "Dọc Đường" products
-    const stats = await queryOneNhapHang(`
+    const { searchParams } = new URL(request.url);
+    const fromDate = searchParams.get('fromDate');
+    const toDate = searchParams.get('toDate');
+
+    let query = `
       SELECT
         COUNT(*) as total_freight,
         COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending,
@@ -22,7 +25,22 @@ export async function GET(request) {
         COALESCE(SUM("totalAmount"), 0) as total_revenue
       FROM "Products"
       WHERE (station LIKE '00 -%' OR station LIKE '00-%' OR LOWER(station) LIKE '%dọc đường%' OR LOWER(station) LIKE '%doc duong%')
-    `);
+    `;
+
+    const params = [];
+    let paramIndex = 1;
+    if (fromDate) {
+      query += ` AND DATE("sendDate") >= $${paramIndex}`;
+      params.push(fromDate);
+      paramIndex++;
+    }
+    if (toDate) {
+      query += ` AND DATE("sendDate") <= $${paramIndex}`;
+      params.push(toDate);
+      paramIndex++;
+    }
+
+    const stats = await queryOneNhapHang(query, params);
 
     return NextResponse.json({
       total_freight: parseInt(stats.total_freight) || 0,

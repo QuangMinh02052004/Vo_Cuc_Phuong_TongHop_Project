@@ -38,7 +38,7 @@ async function callAPI(endpoint, options = {}) {
         if (response.status === 401 || response.status === 403) {
             sessionStorage.removeItem('currentUser');
             localStorage.removeItem('currentUser');
-            alert('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại!');
+            await showAlertModal('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại!', { title: 'Hết phiên', type: 'warning' });
             window.location.href = 'login.html';
             return null;
         }
@@ -320,7 +320,7 @@ function renderLogsTable(logs) {
 // Xem chi tiết sản phẩm
 function viewProduct(productId) {
     // Có thể mở popup hoặc chuyển trang
-    alert(`Mã đơn hàng: ${productId}\n\nChức năng xem chi tiết sẽ được phát triển thêm.`);
+    showAlertModal(`Mã đơn hàng: ${productId}\n\nChức năng xem chi tiết sẽ được phát triển thêm.`, { title: 'Chi tiết đơn hàng', type: 'info' });
 }
 
 // Load logs
@@ -401,7 +401,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Load danh sách trạm cho dropdown
     await loadStations();
 
-    // Không set filter ngày mặc định - hiển thị tất cả
+    // Set filter ngày mặc định = hôm nay
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    document.getElementById('filterDateFrom').value = todayStr;
+    document.getElementById('filterDateTo').value = todayStr;
+
     // Load logs
     await loadLogs();
 

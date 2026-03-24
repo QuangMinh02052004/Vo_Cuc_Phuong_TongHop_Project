@@ -23,6 +23,15 @@ export async function GET(request) {
     `);
     results.push('✅ TH_Users table ready');
 
+    // Thêm cột email, phone nếu chưa có
+    try {
+      await queryTongHop(`ALTER TABLE "TH_Users" ADD COLUMN IF NOT EXISTS email VARCHAR(100)`);
+      await queryTongHop(`ALTER TABLE "TH_Users" ADD COLUMN IF NOT EXISTS phone VARCHAR(20)`);
+      results.push('✅ TH_Users email/phone columns ready');
+    } catch (e) {
+      results.push('⚠️ TH_Users alter: ' + e.message);
+    }
+
     // Seed Users nếu chưa có
     const userCount = await queryOneTongHop('SELECT COUNT(*) as count FROM "TH_Users"');
     if (parseInt(userCount.count) === 0) {

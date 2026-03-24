@@ -11,6 +11,14 @@ function getAuthToken() {
     return user?.token;
 }
 
+// Helper: lấy fullName của user hiện tại
+function getCurrentUserName() {
+    const sessionUser = sessionStorage.getItem('currentUser');
+    const localUser = localStorage.getItem('currentUser');
+    const user = sessionUser ? JSON.parse(sessionUser) : (localUser ? JSON.parse(localUser) : null);
+    return user?.fullName || user?.username || 'Unknown';
+}
+
 // Helper function để call API
 async function callAPI(endpoint, options = {}) {
     const token = getAuthToken();
@@ -40,7 +48,7 @@ async function callAPI(endpoint, options = {}) {
             if (!window.location.pathname.includes('login.html')) {
                 sessionStorage.removeItem('currentUser');
                 localStorage.removeItem('currentUser');
-                alert('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại!');
+                showAlertModal('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại!', { title: 'Hết phiên', type: 'warning' });
                 window.location.href = 'login.html';
             }
             return null;
@@ -144,7 +152,7 @@ export async function updateProduct(productId, productData) {
     try {
         const result = await callAPI(`/products/${productId}`, {
             method: 'PUT',
-            body: JSON.stringify(productData)
+            body: JSON.stringify({ ...productData, changedBy: getCurrentUserName() })
         });
 
         // Trả về kết quả từ server (bao gồm cả lỗi 403 - hết thời gian sửa giá)
@@ -159,16 +167,20 @@ export async function updateProduct(productId, productData) {
     }
 }
 
-// Delete a product
-export async function deleteProduct(productId) {
+// Cancel a product (soft delete)
+export async function deleteProduct(productId, cancelNote = '') {
     try {
-        await callAPI(`/products/${productId}`, {
+        const params = new URLSearchParams({
+            changedBy: getCurrentUserName(),
+            ...(cancelNote && { cancelNote })
+        });
+        await callAPI(`/products/${productId}?${params.toString()}`, {
             method: 'DELETE'
         });
 
         return { success: true };
     } catch (error) {
-        console.error('Error deleting product:', error);
+        console.error('Error cancelling product:', error);
         return { success: false, error: error.message };
     }
 }

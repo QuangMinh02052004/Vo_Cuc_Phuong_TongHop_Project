@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     // Kiểm tra quyền admin
     const currentUser = getCurrentUser();
     if (!currentUser || currentUser.role !== 'admin') {
-        alert('Bạn không có quyền truy cập trang này!');
+        await showAlertModal('Bạn không có quyền truy cập trang này!', { title: 'Không có quyền', type: 'danger' });
         window.location.href = 'index.html';
         return;
     }
@@ -167,7 +167,7 @@ async function handleSaveUser(e) {
     // Kiểm tra username đã tồn tại chưa (khi thêm mới hoặc sửa username)
     const existingUser = users.find(u => u.username === username && u.id !== editingUserId);
     if (existingUser) {
-        alert('Tên đăng nhập đã tồn tại!');
+        showAlertModal('Tên đăng nhập đã tồn tại!', { title: 'Lỗi', type: 'warning' });
         return;
     }
 
@@ -237,11 +237,17 @@ async function deleteUserHandler(userId) {
     if (!user) return;
 
     if (user.username === 'admin') {
-        alert('Không thể xóa tài khoản admin!');
+        showAlertModal('Không thể xóa tài khoản admin!', { title: 'Không được phép', type: 'danger' });
         return;
     }
 
-    if (confirm(`Bạn có chắc chắn muốn xóa tài khoản "${user.fullName}"?`)) {
+    const confirmed = await showConfirmModal(`Bạn có chắc chắn muốn xóa tài khoản "${user.fullName}"?`, {
+        title: 'Xóa tài khoản',
+        type: 'danger',
+        confirmText: 'Xóa',
+        danger: true
+    });
+    if (confirmed) {
         const result = await deleteUserFromDB(userId);
 
         if (result.success) {

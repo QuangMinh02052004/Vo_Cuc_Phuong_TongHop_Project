@@ -543,8 +543,8 @@ export async function POST(request) {
       }, { status: 400 });
     }
 
-    // Generate product ID
-    const stationCode = extractStationCode(senderStation);
+    // Generate product ID - dùng TRẠM NHẬN (station) để sinh mã
+    const stationCode = extractStationCode(station);
 
     // ✅ SIMPLE FIX: Giữ nguyên giờ Vietnam, không cần convert
     // Frontend gửi 20:47 → Server lưu 20:47 → Hiển thị 20:47
@@ -624,61 +624,57 @@ export async function POST(request) {
 
     const product = result[0];
 
-    // Log creation
-    const clientIP = getClientIP(request);
-    await logProductChange(
-      productId,
-      'create',
-      'product_info',
-      null,
-      JSON.stringify({ receiverName, receiverPhone, totalAmount: totalAmount || 0 }),
-      createdBy || 'system',
-      clientIP
-    );
-
-    // If destination is "Dọc Đường", auto-create TongHop booking (DIRECT DATABASE)
-    let tongHopBookingId = null;
-    if (isDocDuong(station)) {
-      console.log(`[NhapHang] Đơn dọc đường detected: ${productId}, syncing to TongHop directly...`);
-
-      tongHopBookingId = await createTongHopBooking({
-        id: productId,
-        senderStation,
-        station,
-        receiverName,
-        receiverPhone,
-        vehicle,
-        productType,
-        quantity,
-        totalAmount,
-        notes,
-        sendDate: sendDateTime
-      });
-
-      if (tongHopBookingId) {
-        await queryNhapHang(`
-          UPDATE "Products"
-          SET "tongHopBookingId" = $1, "syncedToTongHop" = true
-          WHERE id = $2
-        `, [tongHopBookingId, productId]);
-
-        product.tongHopBookingId = tongHopBookingId;
-        product.syncedToTongHop = true;
-
-        console.log(`[NhapHang] Synced to TongHop booking ID: ${tongHopBookingId}`);
-      }
-    }
-
     // Sanitize sendDate để không có Z suffix
     const sanitizedProduct = sanitizeSendDate({ ...product });
 
-    return NextResponse.json({
+    // === RESPOND IMMEDIATELY - don't block on log & TongHop sync ===
+    const response = NextResponse.json({
       success: true,
       message: 'Tạo đơn hàng thành công!',
       data: sanitizedProduct,
-      product: sanitizedProduct, // Backward compatibility
-      tongHopBookingId
+      product: sanitizedProduct,
+      tongHopBookingId: null
     }, { status: 201 });
+
+    // Fire-and-forget: Log + TongHop sync (non-blocking)
+    const clientIP = getClientIP(request);
+    const bgTasks = [];
+
+    // Log creation (async, don't await)
+    bgTasks.push(
+      logProductChange(
+        productId, 'create', 'product_info', null,
+        JSON.stringify({ receiverName, receiverPhone, totalAmount: totalAmount || 0 }),
+        createdBy || 'system', clientIP
+      ).catch(err => console.error('[Log] Error:', err))
+    );
+
+    // TongHop booking for Dọc Đường (async, don't block response)
+    if (isDocDuong(station)) {
+      console.log(`[NhapHang] Đơn dọc đường detected: ${productId}, syncing to TongHop in background...`);
+      bgTasks.push(
+        createTongHopBooking({
+          id: productId, senderStation, station,
+          receiverName, receiverPhone, vehicle,
+          productType, quantity, totalAmount, notes,
+          sendDate: sendDateTime
+        }).then(async (bookingId) => {
+          if (bookingId) {
+            await queryNhapHang(`
+              UPDATE "Products"
+              SET "tongHopBookingId" = $1, "syncedToTongHop" = true
+              WHERE id = $2
+            `, [bookingId, productId]);
+            console.log(`[NhapHang] Synced to TongHop booking ID: ${bookingId}`);
+          }
+        }).catch(err => console.error('[TongHop Sync] Error:', err))
+      );
+    }
+
+    // Let background tasks run without blocking response
+    Promise.all(bgTasks).catch(() => {});
+
+    return response;
 
   } catch (error) {
     console.error('[Products] POST Error:', error);
