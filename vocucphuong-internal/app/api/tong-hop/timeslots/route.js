@@ -3,62 +3,52 @@ import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-// Khung giờ cho tuyến Sài Gòn - Long Khánh (05:30 - 20:00)
-const SGtoLK_TIMES = [
-  '05:30', '06:00', '06:30', '07:00', '07:30', '08:00', '08:30', '09:00', '09:30', '10:00',
-  '10:30', '11:00', '11:30', '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00',
-  '15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00'
-];
-
-// Khung giờ cho tuyến Long Khánh - Sài Gòn (03:30 - 18:00) - matching original
-const LKtoSG_TIMES = [
-  '03:30', '04:00', '04:30', '05:00', '05:30', '06:00', '06:30', '07:00', '07:30', '08:00',
-  '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '13:00',
-  '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00'
-];
-
-// Routes với format chính xác (SG không có space trước dash, LK có space)
-const ROUTE_SG_LK = 'Sài Gòn- Long Khánh';
-const ROUTE_LK_SG = 'Long Khánh - Sài Gòn';
-const DEFAULT_ROUTES = [ROUTE_SG_LK, ROUTE_LK_SG];
-
-// Helper: Normalize route format to match standard
-function normalizeRoute(route) {
-  if (!route) return ROUTE_SG_LK;
-
-  const lower = route.toLowerCase();
-
-  // Check for Long Khánh - Sài Gòn direction
-  if (lower.includes('long khánh') && lower.includes('sài gòn')) {
-    if (lower.indexOf('long') < lower.indexOf('sài')) {
-      return ROUTE_LK_SG; // LK -> SG
-    }
+// Helper: Generate danh sách giờ từ start→end, mỗi interval phút
+function generateTimes(startTime, endTime, intervalMinutes) {
+  const times = [];
+  const [startH, startM] = startTime.split(':').map(Number);
+  const [endH, endM] = endTime.split(':').map(Number);
+  let current = startH * 60 + startM;
+  const end = endH * 60 + endM;
+  while (current <= end) {
+    const h = String(Math.floor(current / 60)).padStart(2, '0');
+    const m = String(current % 60).padStart(2, '0');
+    times.push(`${h}:${m}`);
+    current += intervalMinutes;
   }
-
-  // Check for Sài Gòn - Long Khánh direction (default)
-  if (lower.includes('sài gòn') || lower.includes('sg') || lower.includes('saigon')) {
-    return ROUTE_SG_LK;
-  }
-
-  // Default
-  return ROUTE_SG_LK;
+  return times;
 }
 
-// Helper: Lấy danh sách times theo route
-function getTimesForRoute(route) {
-  if (route === ROUTE_LK_SG) {
-    return LKtoSG_TIMES;
+// Helper: Lấy danh sách times theo route (từ TH_Routes database, fallback theo hướng)
+async function getTimesForRoute(route) {
+  // Thử lấy từ TH_Routes database
+  try {
+    const routeInfo = await queryOneTongHop(
+      'SELECT "operatingStart", "operatingEnd", "intervalMinutes" FROM "TH_Routes" WHERE name = $1 AND "isActive" = true',
+      [route]
+    );
+    if (routeInfo) {
+      return generateTimes(routeInfo.operatingStart || '05:30', routeInfo.operatingEnd || '20:00', routeInfo.intervalMinutes || 30);
+    }
+  } catch (e) {
+    console.warn('[Timeslots] Lỗi query TH_Routes:', e.message);
   }
-  return SGtoLK_TIMES;
+
+  // Fallback: detect hướng tuyến
+  const lower = (route || '').toLowerCase();
+  const isFromLK = lower.startsWith('long khánh') || lower.startsWith('xuân lộc');
+  if (isFromLK) {
+    return generateTimes('03:30', '18:00', 30);
+  }
+  return generateTimes('05:30', '20:00', 30);
 }
 
 // Helper: Tạo các timeslot mặc định cho một ngày và route
 async function createDefaultTimeslots(date, route) {
-  const times = getTimesForRoute(route);
+  const times = await getTimesForRoute(route);
   const created = [];
 
   for (const time of times) {
-    // Kiểm tra đã tồn tại chưa
     const existing = await queryOneTongHop(
       `SELECT id FROM "TH_TimeSlots" WHERE time = $1 AND date = $2 AND route = $3`,
       [time, date, route]
@@ -83,31 +73,7 @@ export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const date = searchParams.get('date');
-    const rawRoute = searchParams.get('route');
-    // Normalize route format to prevent duplicates
-    const route = rawRoute ? normalizeRoute(rawRoute) : null;
-
-    // Nếu có date, kiểm tra và tạo timeslots mặc định nếu cần
-    if (date) {
-      // Kiểm tra cho TỪNG route, không phải tổng thể
-      for (const r of DEFAULT_ROUTES) {
-        // Nếu có filter route cụ thể, chỉ tạo cho route đó
-        if (route && r !== route) continue;
-
-        const expectedTimes = getTimesForRoute(r);
-        const existingCount = await queryOneTongHop(
-          `SELECT COUNT(*) as count FROM "TH_TimeSlots" WHERE date = $1 AND route = $2`,
-          [date, r]
-        );
-
-        // Nếu chưa đủ timeslot cho ngày + route này, tạo bổ sung
-        const currentCount = parseInt(existingCount?.count || '0');
-        if (currentCount < expectedTimes.length) {
-          console.log(`[Timeslots] Chỉ có ${currentCount}/${expectedTimes.length} timeslot cho ngày ${date} route "${r}", đang tạo bổ sung...`);
-          await createDefaultTimeslots(date, r);
-        }
-      }
-    }
+    const route = searchParams.get('route') || null;
 
     // Query timeslots - SỬ DỤNG DISTINCT ON để loại bỏ duplicate
     // Giữ lại record có ID nhỏ nhất (cũ nhất) cho mỗi time+date+route
@@ -155,9 +121,11 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { time, date, route: rawRoute, type, code, driver, phone } = body;
-    // Normalize route format to prevent duplicates
-    const route = normalizeRoute(rawRoute);
+    const { time, date, route, type, code, driver, phone } = body;
+
+    if (!route) {
+      return NextResponse.json({ error: 'Route is required' }, { status: 400 });
+    }
 
     // Sử dụng UPSERT để tránh race condition và đảm bảo không duplicate
     // ON CONFLICT DO UPDATE để luôn trả về dữ liệu mới nhất
@@ -179,14 +147,17 @@ export async function POST(request) {
     console.error('Error creating timeslot:', error);
     // Nếu lỗi unique constraint (race condition), thử lấy existing
     if (error.code === '23505') {
-      const body = await request.clone().json();
-      const route = normalizeRoute(body.route);
-      const existing = await queryOneTongHop(`
-        SELECT * FROM "TH_TimeSlots"
-        WHERE time = $1 AND date = $2 AND route = $3
-      `, [body.time, body.date, route]);
-      if (existing) {
-        return NextResponse.json(existing, { status: 200 });
+      try {
+        const body2 = await request.clone().json();
+        const existing = await queryOneTongHop(`
+          SELECT * FROM "TH_TimeSlots"
+          WHERE time = $1 AND date = $2 AND route = $3
+        `, [body2.time, body2.date, body2.route]);
+        if (existing) {
+          return NextResponse.json(existing, { status: 200 });
+        }
+      } catch (e) {
+        // ignore
       }
     }
     return NextResponse.json({ error: error.message }, { status: 500 });

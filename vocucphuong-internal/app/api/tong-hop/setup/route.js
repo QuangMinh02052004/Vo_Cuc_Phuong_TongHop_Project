@@ -62,6 +62,17 @@ export async function GET(request) {
     `);
     results.push('✅ TH_TimeSlots table ready');
 
+    // Thêm unique constraint cho TH_TimeSlots (date, time, route) nếu chưa có
+    try {
+      await queryTongHop(`
+        CREATE UNIQUE INDEX IF NOT EXISTS "UQ_TimeSlot_date_time_route"
+        ON "TH_TimeSlots" (date, time, route)
+      `);
+      results.push('✅ TH_TimeSlots unique index ready');
+    } catch (e) {
+      results.push('⚠️ TH_TimeSlots index: ' + e.message);
+    }
+
     // Tạo bảng TH_Bookings
     await queryTongHop(`
       CREATE TABLE IF NOT EXISTS "TH_Bookings" (
