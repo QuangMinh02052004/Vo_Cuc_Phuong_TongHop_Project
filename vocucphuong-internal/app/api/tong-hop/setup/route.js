@@ -153,6 +153,61 @@ export async function GET(request) {
       results.push('✅ Vehicles seeded');
     }
 
+    // Tạo bảng TH_Routes
+    await queryTongHop(`
+      CREATE TABLE IF NOT EXISTS "TH_Routes" (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(200) NOT NULL UNIQUE,
+        "routeType" VARCHAR(50) DEFAULT 'quoc_lo',
+        "fromStation" VARCHAR(100),
+        "toStation" VARCHAR(100),
+        price DECIMAL(18,2) DEFAULT 0,
+        duration VARCHAR(50),
+        "busType" VARCHAR(50) DEFAULT 'Ghế ngồi',
+        seats INTEGER DEFAULT 28,
+        distance VARCHAR(50),
+        "operatingStart" VARCHAR(10) DEFAULT '03:30',
+        "operatingEnd" VARCHAR(10) DEFAULT '18:00',
+        "intervalMinutes" INTEGER DEFAULT 30,
+        "isActive" BOOLEAN DEFAULT true,
+        "createdAt" TIMESTAMP DEFAULT NOW(),
+        "updatedAt" TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    results.push('✅ TH_Routes table ready');
+
+    // Thêm cột mới cho TH_Routes nếu chưa có (migration)
+    try {
+      await queryTongHop(`ALTER TABLE "TH_Routes" ADD COLUMN IF NOT EXISTS "fromStation" VARCHAR(100)`);
+      await queryTongHop(`ALTER TABLE "TH_Routes" ADD COLUMN IF NOT EXISTS "toStation" VARCHAR(100)`);
+      await queryTongHop(`ALTER TABLE "TH_Routes" ADD COLUMN IF NOT EXISTS "busType" VARCHAR(50) DEFAULT 'Ghế ngồi'`);
+      await queryTongHop(`ALTER TABLE "TH_Routes" ADD COLUMN IF NOT EXISTS seats INTEGER DEFAULT 28`);
+      await queryTongHop(`ALTER TABLE "TH_Routes" ADD COLUMN IF NOT EXISTS distance VARCHAR(50)`);
+      await queryTongHop(`ALTER TABLE "TH_Routes" ADD COLUMN IF NOT EXISTS "operatingStart" VARCHAR(10) DEFAULT '03:30'`);
+      await queryTongHop(`ALTER TABLE "TH_Routes" ADD COLUMN IF NOT EXISTS "operatingEnd" VARCHAR(10) DEFAULT '18:00'`);
+      await queryTongHop(`ALTER TABLE "TH_Routes" ADD COLUMN IF NOT EXISTS "intervalMinutes" INTEGER DEFAULT 30`);
+      results.push('✅ TH_Routes columns migrated');
+    } catch (e) {
+      results.push('⚠️ TH_Routes migration: ' + e.message);
+    }
+
+    // Seed Routes nếu chưa có
+    const routeCount = await queryOneTongHop('SELECT COUNT(*) as count FROM "TH_Routes"');
+    if (parseInt(routeCount.count) === 0) {
+      await queryTongHop(`
+        INSERT INTO "TH_Routes" (name, "routeType", "fromStation", "toStation", price, duration, "busType", seats, distance, "operatingStart", "operatingEnd", "intervalMinutes") VALUES
+        ('Long Khánh - Sài Gòn (Cao tốc)', 'cao_toc', 'Long Khánh', 'Sài Gòn', 120000, '1.5 giờ', 'Ghế ngồi', 28, '80 km', '03:30', '18:00', 30),
+        ('Long Khánh - Sài Gòn (Quốc lộ)', 'quoc_lo', 'Long Khánh', 'Sài Gòn', 110000, '2 giờ', 'Ghế ngồi', 28, '80 km', '03:30', '18:00', 30),
+        ('Sài Gòn - Long Khánh (Cao tốc)', 'cao_toc', 'Sài Gòn', 'Long Khánh', 120000, '1.5 giờ', 'Ghế ngồi', 28, '80 km', '05:30', '20:00', 30),
+        ('Sài Gòn - Long Khánh (Quốc lộ)', 'quoc_lo', 'Sài Gòn', 'Long Khánh', 110000, '~ 2 giờ 30 phút', 'Ghế ngồi', 28, '80 km', '05:30', '20:00', 30),
+        ('Sài Gòn - Xuân Lộc (Cao tốc)', 'cao_toc', 'Sài Gòn', 'Xuân Lộc', 130000, '2 giờ ~ 4 giờ', 'Ghế ngồi', 28, '80 km', '05:30', '18:30', 30),
+        ('Quốc Lộ 1A - Xuân Lộc (Quốc lộ)', 'quoc_lo', 'Quốc Lộ 1A', 'Xuân Lộc', 130000, '1.5 giờ ~ 4 tiếng', 'Ghế ngồi', 28, '80 km', '05:30', '17:00', 30),
+        ('Xuân Lộc - Long Khánh (Cao tốc)', 'cao_toc', 'Xuân Lộc', 'Long Khánh', 130000, '1 giờ', 'Ghế ngồi', 28, '80 km', '03:30', '17:00', 30),
+        ('Xuân Lộc - Long Khánh (Quốc lộ)', 'quoc_lo', 'Xuân Lộc', 'Long Khánh', 130000, '1.5 giờ', 'Ghế ngồi', 28, '80 km', '03:30', '17:00', 30)
+      `);
+      results.push('✅ Routes seeded (8 tuyến mặc định - khớp DatVe)');
+    }
+
     // Clean expired seat locks
     await queryTongHop('DELETE FROM "TH_SeatLocks" WHERE "expiresAt" < NOW()');
     results.push('✅ Cleaned expired seat locks');

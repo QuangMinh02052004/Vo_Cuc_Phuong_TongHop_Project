@@ -17,32 +17,88 @@ function formatDate(dateStr) {
   return `${day}-${month}-${year}`;
 }
 
-// Helper: Xác định route name từ route string
-// FORMAT GỐC: 'Sài Gòn- Long Khánh' (KHÔNG có space) và 'Long Khánh - Sài Gòn' (CÓ space)
-function determineRoute(routeStr) {
-  const route = (routeStr || '').toLowerCase();
+// Helper: Xác định route name từ DatVe route string
+// DatVe gửi dạng: "Long Khánh → Sài Gòn (Cao tốc)" hoặc "Sài Gòn → Long Khánh (Quốc lộ)"
+// TongHop routes dạng: "Long Khánh - Sài Gòn (Cao tốc)"
+async function determineRoute(routeStr) {
+  const raw = (routeStr || '').trim();
 
-  // Kiểm tra vị trí của "sài gòn" và "long khánh" để xác định hướng
+  // 1. Parse route string từ DatVe: "From → To (Type)"
+  // Extract from, to, type
+  const arrowMatch = raw.match(/^(.+?)\s*[→\->]+\s*(.+)$/);
+  let from = '', to = '', routeType = '';
+
+  if (arrowMatch) {
+    from = arrowMatch[1].trim();
+    to = arrowMatch[2].trim();
+  } else {
+    from = raw;
+  }
+
+  // Extract route type from "to" field: "Sài Gòn (Cao tốc)" → to="Sài Gòn", type="Cao tốc"
+  const typeMatch = to.match(/^(.+?)\s*\(([^)]+)\)\s*$/);
+  if (typeMatch) {
+    to = typeMatch[1].trim();
+    routeType = typeMatch[2].trim().toLowerCase();
+  }
+
+  // 2. Tìm route match trong TH_Routes database
+  try {
+    const allRoutes = await queryTongHop('SELECT * FROM "TH_Routes" WHERE "isActive" = true');
+
+    if (allRoutes.length > 0) {
+      // Thử exact match trước: "Long Khánh - Sài Gòn (Cao tốc)"
+      const typeSuffix = routeType.includes('cao') ? 'Cao tốc' : routeType.includes('qu') ? 'Quốc lộ' : '';
+      const targetName = typeSuffix ? `${from} - ${to} (${typeSuffix})` : `${from} - ${to}`;
+
+      // Tìm exact match (case-insensitive)
+      let matched = allRoutes.find(r =>
+        r.name.toLowerCase() === targetName.toLowerCase()
+      );
+
+      // Nếu không exact match, tìm fuzzy: route chứa cả from, to, và type
+      if (!matched && from && to) {
+        matched = allRoutes.find(r => {
+          const name = r.name.toLowerCase();
+          const hasFrom = name.includes(from.toLowerCase());
+          const hasTo = name.includes(to.toLowerCase());
+          const hasType = !typeSuffix || name.includes(typeSuffix.toLowerCase());
+          // Kiểm tra hướng: from phải đứng trước to
+          if (hasFrom && hasTo && hasType) {
+            const fromIdx = name.indexOf(from.toLowerCase());
+            const toIdx = name.indexOf(to.toLowerCase());
+            return fromIdx < toIdx;
+          }
+          return false;
+        });
+      }
+
+      // Nếu match được, dùng tên route từ database
+      if (matched) {
+        console.log(`[Webhook] Route matched: "${raw}" → "${matched.name}"`);
+        return matched.name;
+      }
+    }
+  } catch (err) {
+    console.error('[Webhook] Error querying routes:', err.message);
+  }
+
+  // 3. Fallback: tạo tên route từ parsed data
+  const typeSuffix = routeType.includes('cao') ? ' (Cao tốc)' : routeType.includes('qu') ? ' (Quốc lộ)' : '';
+  if (from && to) {
+    return `${from} - ${to}${typeSuffix}`;
+  }
+
+  // 4. Legacy fallback cho route cũ không có type
+  const route = raw.toLowerCase();
   const sgPos = route.indexOf('sài gòn');
   const lkPos = route.indexOf('long khánh');
 
   if (sgPos !== -1 && lkPos !== -1) {
-    if (sgPos < lkPos) {
-      return 'Sài Gòn- Long Khánh';  // KHÔNG có space trước dấu gạch
-    } else {
-      return 'Long Khánh - Sài Gòn';  // CÓ space trước dấu gạch
-    }
+    return sgPos < lkPos ? `Sài Gòn - Long Khánh${typeSuffix}` : `Long Khánh - Sài Gòn${typeSuffix}`;
   }
 
-  if (route.includes('sài gòn')) {
-    return 'Sài Gòn- Long Khánh';  // KHÔNG có space
-  }
-  if (route.includes('long khánh')) {
-    return 'Long Khánh - Sài Gòn';  // CÓ space
-  }
-
-  // Default
-  return 'Sài Gòn- Long Khánh';  // KHÔNG có space
+  return `Sài Gòn - Long Khánh${typeSuffix}` || 'Sài Gòn - Long Khánh';
 }
 
 // Helper: Tìm hoặc tạo timeslot phù hợp
@@ -120,8 +176,8 @@ export async function POST(request) {
       }, { status: 400 });
     }
 
-    // Xác định route
-    const route = determineRoute(routeStr);
+    // Xác định route (async - query database)
+    const route = await determineRoute(routeStr);
     const formattedDate = formatDate(date || new Date());
 
     // Tìm hoặc tạo timeslot
