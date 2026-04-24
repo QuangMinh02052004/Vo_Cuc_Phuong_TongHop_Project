@@ -8,6 +8,7 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const date = searchParams.get('date');
     const route = searchParams.get('route');
+    const search = searchParams.get('search');
 
     let sqlQuery = 'SELECT * FROM "TH_Bookings" WHERE 1=1';
     const params = [];
@@ -22,6 +23,12 @@ export async function GET(request) {
     if (route) {
       sqlQuery += ` AND route = $${paramIndex}`;
       params.push(route);
+      paramIndex++;
+    }
+
+    if (search) {
+      sqlQuery += ` AND (name ILIKE $${paramIndex} OR phone ILIKE $${paramIndex})`;
+      params.push(`%${search}%`);
       paramIndex++;
     }
 

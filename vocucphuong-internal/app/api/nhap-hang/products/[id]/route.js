@@ -123,6 +123,19 @@ export async function PUT(request, { params }) {
       }, { status: 404 });
     }
 
+    // Kiểm tra thời gian cho phép sửa (2 phút kể từ sendDate)
+    if (existing.sendDate) {
+      const created = new Date(existing.sendDate);
+      const elapsed = Date.now() - created.getTime();
+      if (elapsed > 2 * 60 * 1000) {
+        return NextResponse.json({
+          success: false,
+          code: 'EDIT_TIME_EXPIRED',
+          error: 'Đã quá 2 phút! Không thể chỉnh sửa đơn hàng.'
+        }, { status: 403 });
+      }
+    }
+
     const allowedFields = [
       'senderName', 'senderPhone', 'senderStation',
       'receiverName', 'receiverPhone', 'station',

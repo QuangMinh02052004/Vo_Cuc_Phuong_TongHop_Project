@@ -10,6 +10,41 @@ let allProducts = [];
 let currentUserStation = '';
 let searchFilters = {}; // Bộ lọc tìm kiếm
 
+const PAGE_SIZE = 20;
+let currentPage = 1;
+
+function renderPagination(totalItems, containerId = 'paginationContainer') {
+    const totalPages = Math.ceil(totalItems / PAGE_SIZE);
+    let container = document.getElementById(containerId);
+    if (!container) return;
+    if (totalPages <= 1) { container.innerHTML = ''; return; }
+    const start = (currentPage - 1) * PAGE_SIZE + 1;
+    const end = Math.min(currentPage * PAGE_SIZE, totalItems);
+    let html = `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 4px;font-size:14px;color:#6b7280;">
+        <span>${start}–${end} / <strong>${totalItems}</strong> đơn</span>
+        <div style="display:flex;gap:4px;align-items:center;">`;
+    html += `<button onclick="goToPage(1)" ${currentPage===1?'disabled':''} style="padding:5px 9px;border:1px solid #d1d5db;border-radius:6px;background:${currentPage===1?'#f3f4f6':'white'};cursor:${currentPage===1?'default':'pointer'};font-size:13px;">«</button>`;
+    html += `<button onclick="goToPage(${currentPage-1})" ${currentPage===1?'disabled':''} style="padding:5px 9px;border:1px solid #d1d5db;border-radius:6px;background:${currentPage===1?'#f3f4f6':'white'};cursor:${currentPage===1?'default':'pointer'};font-size:13px;">‹</button>`;
+    const range = [];
+    for (let i = Math.max(1, currentPage-2); i <= Math.min(totalPages, currentPage+2); i++) range.push(i);
+    range.forEach(p => {
+        const active = p === currentPage;
+        html += `<button onclick="goToPage(${p})" style="padding:5px 10px;border:1px solid ${active?'#0ea5e9':'#d1d5db'};border-radius:6px;background:${active?'#0ea5e9':'white'};color:${active?'white':'#374151'};font-weight:${active?'600':'400'};cursor:pointer;font-size:13px;">${p}</button>`;
+    });
+    html += `<button onclick="goToPage(${currentPage+1})" ${currentPage===totalPages?'disabled':''} style="padding:5px 9px;border:1px solid #d1d5db;border-radius:6px;background:${currentPage===totalPages?'#f3f4f6':'white'};cursor:${currentPage===totalPages?'default':'pointer'};font-size:13px;">›</button>`;
+    html += `<button onclick="goToPage(${totalPages})" ${currentPage===totalPages?'disabled':''} style="padding:5px 9px;border:1px solid #d1d5db;border-radius:6px;background:${currentPage===totalPages?'#f3f4f6':'white'};cursor:${currentPage===totalPages?'default':'pointer'};font-size:13px;">»</button>`;
+    html += `</div></div>`;
+    container.innerHTML = html;
+}
+
+function goToPage(page) {
+    const totalPages = Math.ceil(window._lastFilteredCount / PAGE_SIZE);
+    currentPage = Math.max(1, Math.min(page, totalPages || 1));
+    renderWarehouseTable();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+window.goToPage = goToPage;
+
 // === Auto-format tiền VND (1000 → 1.000, 1000000 → 1.000.000) ===
 function formatVND(value) {
     const num = String(value).replace(/\D/g, '');
@@ -224,13 +259,22 @@ function renderWarehouseTable() {
                 </td>
             </tr>
         `;
+        renderPagination(0);
         return;
     }
 
     // Sắp xếp theo ngày gởi (mới nhất trước)
     filteredProducts.sort((a, b) => new Date(b.sendDate) - new Date(a.sendDate));
 
-    tbody.innerHTML = filteredProducts.map((product, index) => {
+    // Pagination
+    window._lastFilteredCount = filteredProducts.length;
+    const totalPages = Math.ceil(filteredProducts.length / PAGE_SIZE);
+    if (currentPage > totalPages) currentPage = totalPages;
+    const pageOffset = (currentPage - 1) * PAGE_SIZE;
+    const pageProducts = filteredProducts.slice(pageOffset, pageOffset + PAGE_SIZE);
+
+    tbody.innerHTML = pageProducts.map((product, index) => {
+        const index_real = pageOffset + index;
         const sendDate = new Date(product.sendDate).toLocaleDateString('vi-VN');
         const paymentBadge = product.paymentStatus === 'paid'
             ? `<span class="status-badge status-active">Đã thu: ${formatCurrency(product.totalAmount)}đ</span>`
@@ -244,7 +288,7 @@ function renderWarehouseTable() {
 
         return `
             <tr>
-                <td>${index + 1}</td>
+                <td>${index_real + 1}</td>
                 <td>${product.id}</td>
                 <td>${product.senderName || '-'}</td>
                 <td>${product.senderPhone || '-'}</td>
@@ -263,6 +307,8 @@ function renderWarehouseTable() {
             </tr>
         `;
     }).join('');
+
+    renderPagination(filteredProducts.length);
 }
 
 // Render statistics

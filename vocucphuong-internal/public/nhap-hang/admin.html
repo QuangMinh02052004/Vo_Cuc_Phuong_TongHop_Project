@@ -6,8 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quản lý tài khoản - CTY DV XE DU LỊCH VÕ CÚC PHƯƠNG</title>
     <link rel="icon" type="image/png" href="images/logo.png">
-    <link rel="stylesheet" href="css/styles.css?v=6.0">
+    <link rel="stylesheet" href="css/styles.css?v=7.4">
     <link rel="stylesheet" href="css/admin.css?v=2.0">
+    <script src="js/theme.js?v=1.0"></script>
 </head>
 
 <body>
@@ -16,6 +17,15 @@
             <div class="header-top">
                 <h1 class="logo">CTY DV XE DU LỊCH VÕ CÚC PHƯƠNG</h1>
                 <div class="user-info">
+                    <div class="theme-switcher">
+                        <div class="theme-btn active" data-t="default" title="Mặc định"></div>
+                        <div class="theme-btn" data-t="gray" title="Xám"></div>
+                        <div class="theme-btn" data-t="blue" title="Xanh dương"></div>
+                        <div class="theme-btn" data-t="purple" title="Tím"></div>
+                        <div class="theme-btn" data-t="red" title="Đỏ"></div>
+                        <div class="theme-btn" data-t="green" title="Xanh lá"></div>
+                        <div class="theme-btn" data-t="dark" title="Tối"></div>
+                    </div>
                     <span id="currentUser">Admin</span>
                     <span class="separator">|</span>
                     <a href="#" class="link" onclick="logout()">Thoát</a>

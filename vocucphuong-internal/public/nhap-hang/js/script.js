@@ -13,10 +13,46 @@ import {
 import { loadAllOptions, populateSelect, OPTIONS } from '../data/options.js';
 
 let products = [];
+let pendingProducts = []; // Đơn mới thêm qua optimistic UI, chưa sync từ server
 let editingProductId = null;
 let unsubscribeProducts = null;
 let searchFilters = {}; // Bộ lọc tìm kiếm
 let isSubmitting = false; // Ngăn chặn submit nhiều lần liên tục
+
+const PAGE_SIZE = 20;
+let currentPage = 1;
+
+function renderPagination(totalItems, containerId = 'paginationContainer') {
+    const totalPages = Math.ceil(totalItems / PAGE_SIZE);
+    let container = document.getElementById(containerId);
+    if (!container) return;
+    if (totalPages <= 1) { container.innerHTML = ''; return; }
+    const start = (currentPage - 1) * PAGE_SIZE + 1;
+    const end = Math.min(currentPage * PAGE_SIZE, totalItems);
+    let html = `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 4px;font-size:14px;color:#6b7280;">
+        <span>${start}–${end} / <strong>${totalItems}</strong> đơn</span>
+        <div style="display:flex;gap:4px;align-items:center;">`;
+    html += `<button onclick="goToPage(1)" ${currentPage===1?'disabled':''} style="padding:5px 9px;border:1px solid #d1d5db;border-radius:6px;background:${currentPage===1?'#f3f4f6':'white'};cursor:${currentPage===1?'default':'pointer'};font-size:13px;">«</button>`;
+    html += `<button onclick="goToPage(${currentPage-1})" ${currentPage===1?'disabled':''} style="padding:5px 9px;border:1px solid #d1d5db;border-radius:6px;background:${currentPage===1?'#f3f4f6':'white'};cursor:${currentPage===1?'default':'pointer'};font-size:13px;">‹</button>`;
+    const range = [];
+    for (let i = Math.max(1, currentPage-2); i <= Math.min(totalPages, currentPage+2); i++) range.push(i);
+    range.forEach(p => {
+        const active = p === currentPage;
+        html += `<button onclick="goToPage(${p})" style="padding:5px 10px;border:1px solid ${active?'#0ea5e9':'#d1d5db'};border-radius:6px;background:${active?'#0ea5e9':'white'};color:${active?'white':'#374151'};font-weight:${active?'600':'400'};cursor:pointer;font-size:13px;">${p}</button>`;
+    });
+    html += `<button onclick="goToPage(${currentPage+1})" ${currentPage===totalPages?'disabled':''} style="padding:5px 9px;border:1px solid #d1d5db;border-radius:6px;background:${currentPage===totalPages?'#f3f4f6':'white'};cursor:${currentPage===totalPages?'default':'pointer'};font-size:13px;">›</button>`;
+    html += `<button onclick="goToPage(${totalPages})" ${currentPage===totalPages?'disabled':''} style="padding:5px 9px;border:1px solid #d1d5db;border-radius:6px;background:${currentPage===totalPages?'#f3f4f6':'white'};cursor:${currentPage===totalPages?'default':'pointer'};font-size:13px;">»</button>`;
+    html += `</div></div>`;
+    container.innerHTML = html;
+}
+
+function goToPage(page) {
+    const totalPages = Math.ceil(window._lastFilteredCount / PAGE_SIZE);
+    currentPage = Math.max(1, Math.min(page, totalPages || 1));
+    renderTable();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+window.goToPage = goToPage;
 
 // === Auto-format tiền VND (1000 → 1.000, 1000000 → 1.000.000) ===
 function formatVND(value) {
@@ -113,6 +149,11 @@ document.addEventListener('DOMContentLoaded', async function () {
             if (e.key === 'Escape') {
                 e.preventDefault();
                 closeConfirmModal();
+                // Focus vào ô Tổng VND sau khi đóng modal
+                setTimeout(() => {
+                    const totalAmountEl = document.getElementById('totalAmount');
+                    if (totalAmountEl) { totalAmountEl.focus(); totalAmountEl.select(); }
+                }, 100);
             }
             // KHÔNG chặn Enter - để browser tự click nút đang focus
             // Khi Tab đến nút "Lưu" và nhấn Enter -> click "Lưu"
@@ -146,6 +187,16 @@ document.addEventListener('DOMContentLoaded', async function () {
         }
     });
 
+    // Khổ giấy in: restore từ localStorage & lưu khi thay đổi
+    const printSizeSelect = document.getElementById('printSize');
+    if (printSizeSelect) {
+        const savedSize = localStorage.getItem('printSize');
+        if (savedSize) printSizeSelect.value = savedSize;
+        printSizeSelect.addEventListener('change', function () {
+            localStorage.setItem('printSize', this.value);
+        });
+    }
+
     // Xử lý nút làm mới (nếu có)
     const resetBtn = document.getElementById('resetBtn');
     if (resetBtn) {
@@ -155,13 +206,11 @@ document.addEventListener('DOMContentLoaded', async function () {
     // Render bảng
     renderTable();
 
-    // Tự động focus vào ô người nhận khi trang load xong
-    setTimeout(() => {
-        const receiverNameInput = document.getElementById('receiverName');
-        if (receiverNameInput) {
-            receiverNameInput.focus();
-        }
-    }, 200);
+    // Focus vào ô người nhận sau khi trang load xong
+    focusReceiverName();
+
+    // Luôn focus lại khi user quay lại tab/trang
+    window.addEventListener('focus', focusReceiverName);
 });
 
 // Cập nhật UI với thông tin user
@@ -210,6 +259,7 @@ function handleSearch(e) {
         productType: document.getElementById('searchProductType').value
     };
 
+    currentPage = 1;
     renderTable();
 }
 
@@ -217,21 +267,43 @@ function handleSearch(e) {
 function resetSearch() {
     document.getElementById('searchForm').reset();
     searchFilters = {};
+    currentPage = 1;
     renderTable();
 }
 
 // Hàm sinh mã hàng tự động - dùng TRẠM NHẬN (từ dropdown)
 // Format: YYMMDD.SSNN (SS = mã trạm nhận, NN = số thứ tự)
+// Cache counter cục bộ - tránh gọi API mỗi lần reset form
+const counterCache = {}; // { "01_260328": { value: 5, lastSync: timestamp } }
+
 function generateProductId() {
     const receivingStation = document.getElementById('station').value;
     if (receivingStation) {
-        getNextCounterFromServer(receivingStation);
+        const stationCode = receivingStation.split(' - ')[0];
+        const now = new Date();
+        const day = String(now.getDate()).padStart(2, '0');
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const year = String(now.getFullYear()).slice(-2);
+        const dateKey = `${day}${month}${year}`;
+        const cacheKey = `${stationCode}_${dateKey}`;
+
+        // Nếu đã có cache và mới sync < 30s trước → dùng cache, tăng local
+        if (counterCache[cacheKey] && (Date.now() - counterCache[cacheKey].lastSync < 30000)) {
+            counterCache[cacheKey].value++;
+            const yymmdd = `${year}${month}${day}`;
+            const ss = stationCode.padStart(2, '0');
+            const nn = String(counterCache[cacheKey].value);
+            document.getElementById('productId').value = `${yymmdd}.${ss}${nn}`;
+        } else {
+            // Lần đầu hoặc cache cũ → gọi server
+            getNextCounterFromServer(receivingStation);
+        }
     } else {
         document.getElementById('productId').value = 'Chọn trạm để sinh mã';
     }
 }
 
-// Gọi server API để lấy mã tiếp theo (dựa trên trạm NHẬN)
+// Gọi server API để lấy mã tiếp theo + cập nhật cache
 async function getNextCounterFromServer(stationFullName) {
     if (!stationFullName) return null;
     const stationCode = stationFullName.split(' - ')[0];
@@ -240,12 +312,27 @@ async function getNextCounterFromServer(stationFullName) {
         const data = await response.json();
         if (data.success) {
             document.getElementById('productId').value = data.data.nextProductId;
+
+            // Cập nhật cache
+            const cacheKey = `${stationCode}_${data.data.dateKey}`;
+            counterCache[cacheKey] = {
+                value: data.data.nextValue,
+                lastSync: Date.now()
+            };
             return data.data.nextProductId;
         }
     } catch (error) {
         console.error('Error getting next counter:', error);
     }
     return null;
+}
+
+// Focus vào ô người nhận - gọi sau khi thêm/sửa xong
+function focusReceiverName() {
+    setTimeout(() => {
+        const el = document.getElementById('receiverName');
+        if (el) { el.focus(); el.select(); }
+    }, 150);
 }
 
 // Lấy thời gian hiện tại
@@ -348,60 +435,64 @@ async function handleSubmit(shouldPrint = false) {
 
         let result;
         if (editingProductId) {
-            // Cập nhật sản phẩm
+            // === CẬP NHẬT ===
             result = await updateProduct(editingProductId, formData);
             if (result.success) {
-                showNotification('Cập nhật hàng hóa thành công!', 'success');
+                showNotification('Cập nhật thành công!', 'success');
+                const idx = products.findIndex(p => String(p.id) === String(editingProductId));
+                if (idx !== -1) Object.assign(products[idx], formData);
             } else if (result.code === 'EDIT_TIME_EXPIRED') {
-                // Hết thời gian sửa giá (1 phút kể từ khi tạo đơn)
-                showNotification('Đã quá 1 phút! Không thể sửa giá sau khi tạo đơn. Liên hệ quản trị viên.', 'error');
+                showNotification('Không thể sửa.', 'error');
                 closeConfirmModal();
                 editingProductId = null;
-                return; // Dừng lại, không tiếp tục xử lý
+                return;
             } else {
                 showNotification('Lỗi cập nhật: ' + (result.message || result.error), 'error');
+                return;
             }
             editingProductId = null;
         } else {
-            // Thêm sản phẩm mới
+            // === THÊM MỚI: await server để có mã chính thức ===
             result = await addProduct(formData);
             if (result.success) {
                 showNotification('Thêm hàng hóa thành công!', 'success');
             } else {
-                showNotification('Lỗi thêm mới: ' + (result.message || result.error), 'error');
+                showNotification('Lỗi: ' + (result.message || result.error), 'error');
+                return;
             }
         }
 
-        if (result.success) {
-            closeConfirmModal();
+        // === Thành công → cập nhật UI ngay ===
+        closeConfirmModal();
 
-            // Lưu thông tin product để in (sử dụng data từ result hoặc formData)
-            const productIdFromForm = document.getElementById('productId').value;
-            const productToPrint = result.product || {
-                id: formData.id || productIdFromForm,
-                senderName: formData.senderName,
-                senderPhone: formData.senderPhone,
-                senderStation: formData.senderStation,
-                receiverName: formData.receiverName,
-                receiverPhone: formData.receiverPhone,
-                station: formData.station,
-                productType: formData.productType,
-                quantity: formData.quantity,
-                vehicle: formData.vehicle,
-                totalAmount: formData.totalAmount,
-                sendDate: formData.sendDate
-            };
+        // Lấy product từ server response (có ID chính thức)
+        // Lưu ý: result.product từ server có đầy đủ data + ID chính thức
+        const previewId = document.getElementById('productId').value;
+        const productToPrint = result.product || {
+            id: result.id || formData.id || previewId,
+            ...formData
+        };
 
-            // ⚡ IN BIÊN LAI NGAY LẬP TỨC (không chờ load/reset)
-            if (shouldPrint && productToPrint) {
-                console.log('🖨️ [FAST] Printing receipt immediately...');
-                printReceipt(productToPrint);
-            }
-
-            // Load & reset chạy nền (không block)
-            loadProducts().then(() => renderTable()).catch(err => console.error('Load error:', err));
-            resetForm().catch(err => console.error('Reset error:', err));
+        // Thêm vào mảng local (không cần load lại từ server)
+        if (!editingProductId) {
+            products.unshift(productToPrint);
         }
+
+        // Reset form + render + focus
+        const currentStation = document.getElementById('station').value;
+        document.getElementById('productForm').reset();
+        editingProductId = null;
+        if (currentStation) document.getElementById('station').value = currentStation;
+        generateProductId();
+        renderTable();
+
+        // In biên lai nếu cần
+        if (shouldPrint && productToPrint) {
+            printReceipt(productToPrint);
+        }
+
+        // Focus ô nhập tiếp
+        focusReceiverName();
     } finally {
         // ✅ LUÔN RESET FLAG VÀ ENABLE BUTTONS LẠI (dù success hay error)
         isSubmitting = false;
@@ -421,9 +512,15 @@ async function handleSubmit(shouldPrint = false) {
 
 // In biên lai (không mở cửa sổ mới)
 function printReceipt(productData) {
+    // Cleanup: xóa container/style cũ nếu còn tồn tại (tránh in trùng)
+    const oldContainer = document.getElementById('print-receipt-container');
+    const oldStyle = document.getElementById('print-receipt-style');
+    if (oldContainer) oldContainer.remove();
+    if (oldStyle) oldStyle.remove();
+
     const currentUser = getCurrentUser();
 
-    // Format ngày giờ theo ảnh mẫu: "10:38 19/09/2025"
+    // Format ngày giờ
     const now = new Date();
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');
@@ -432,128 +529,199 @@ function printReceipt(productData) {
     const year = now.getFullYear();
     const formattedDateTime = `${hours}:${minutes} ${day}/${month}/${year}`;
 
-    // Trích xuất STT từ senderStation (VD: "01 - An Đông" → "01")
-    const senderStationSTT = productData.senderStation ? productData.senderStation.split(' - ')[0] : '';
-    const senderStationName = productData.senderStation ? productData.senderStation.split(' - ')[1] || productData.senderStation : '';
+    // Trích xuất tên trạm
+    const senderStationName = productData.senderStation ? (productData.senderStation.split(' - ')[1] || productData.senderStation) : '';
+    const stationName = productData.station ? (productData.station.split(' - ')[1] || productData.station) : '';
 
-    // Trích xuất STT từ station (trạm nhận)
-    const stationSTT = productData.station ? productData.station.split(' - ')[0] : '';
-    const stationName = productData.station ? productData.station.split(' - ')[1] || productData.station : '';
-
-    // Xác định trạng thái thanh toán
+    // Trạng thái thanh toán
     const printAmount = parseInt(productData.totalAmount) || 0;
     const paymentStatusText = printAmount >= 10000 ? '(Đã thanh toán)' : '(Chưa thanh toán)';
 
-    // Tạo div chứa nội dung in
+    // Lấy khổ giấy từ dropdown (hoặc localStorage)
+    const printSizeEl = document.getElementById('printSize');
+    const paperWidth = printSizeEl ? parseInt(printSizeEl.value) : (parseInt(localStorage.getItem('printSize')) || 92);
+    const contentWidth = paperWidth - 6; // trừ padding 2 bên (3mm mỗi bên)
+
+    // Tính font size theo khổ giấy
+    const baseFontSize = Math.max(11, Math.round(paperWidth * 0.17));
+    const titleFontSize = baseFontSize + 4;
+    const codeFontSize = baseFontSize + 3;
+    const amountFontSize = baseFontSize + 1;
+    const footerFontSize = Math.max(9, baseFontSize - 3);
+    const qrSize = Math.max(16, Math.round(paperWidth * 0.26));
+
+    // QR: sinh cục bộ bằng qrcode-generator (SVG, không cần Canvas)
+    const qrText = `${productData.receiverName || ''} | ${productData.receiverPhone || ''} | ${productData.quantity || ''} | ${formatCurrency(printAmount)}d`;
+    let qrSvg = '';
+    const qrLib = window.qrcode;
+    if (typeof qrLib !== 'undefined') {
+        try {
+            const qr = qrLib(0, 'M');
+            qr.addData(qrText);
+            qr.make();
+            const svgTag = qr.createSvgTag(4, 0);
+            // Override kích thước SVG để fit vào mm
+            qrSvg = svgTag.replace(/width="[^"]*"/, `width="${qrSize}mm"`).replace(/height="[^"]*"/, `height="${qrSize}mm"`);
+        } catch (e) {
+            console.error('❌ [QR] Generation failed:', e);
+        }
+    } else {
+        console.error('❌ [QR] qrcode library NOT loaded!');
+    }
+
+    // Tạo div chứa nội dung in - thiết kế cho máy in nhiệt
     const printDiv = document.createElement('div');
     printDiv.id = 'print-receipt-container';
     printDiv.innerHTML = `
         <div class="receipt">
-            <div class="title">PHIẾU NHẬN HÀNG</div>
-
-            <div class="info-line">
-                <span class="label">Mã code:</span> ${productData.id || '-'}
+            ${qrSvg ? `<div class="receipt-qr">${qrSvg}</div>` : ''}
+            <div class="receipt-title">PHIẾU NHẬN HÀNG</div>
+            <div class="receipt-row">
+                <span class="receipt-label">Mã code:</span>
+                <span class="receipt-value receipt-code">${productData.id || '-'}</span>
+            </div>
+            <div class="receipt-row">
+                <span class="receipt-label">Trạm nhận:</span>
+                <span class="receipt-value">${stationName.toUpperCase() || '-'}</span>
+            </div>
+            <div class="receipt-row">
+                <span class="receipt-label">Trạm giao:</span>
+                <span class="receipt-value">${senderStationName.toUpperCase() || '-'}</span>
+            </div>
+            <div class="receipt-row">
+                <span class="receipt-label">Người gửi:</span>
+                <span class="receipt-value">${productData.senderName || '-'} ${productData.senderPhone ? '(' + productData.senderPhone + ')' : ''}</span>
+            </div>
+            <div class="receipt-row">
+                <span class="receipt-label">Người nhận:</span>
+                <span class="receipt-value">${productData.receiverName || '-'} (${productData.receiverPhone || '-'})</span>
+            </div>
+            <div class="receipt-row">
+                <span class="receipt-label">Loại hàng:</span>
+                <span class="receipt-value">${productData.productType || '-'}</span>
+            </div>
+            <div class="receipt-row">
+                <span class="receipt-label">Số lượng:</span>
+                <span class="receipt-value">${productData.quantity || '-'}</span>
+            </div>
+            <div class="receipt-row">
+                <span class="receipt-label">Thanh toán:</span>
+                <span class="receipt-value receipt-amount">${formatCurrency(printAmount)}đ ${paymentStatusText}</span>
+            </div>
+            <div class="receipt-row">
+                <span class="receipt-label">Ghi chú:</span>
             </div>
 
-            <div class="info-line">
-                <span class="label">Trạm nhận:</span> ${stationName.toUpperCase() || '-'}
-            </div>
+            <div class="receipt-divider"></div>
 
-            <div class="info-line">
-                <span class="label">Trạm giao:</span> ${senderStationName.toUpperCase() || '-'}
-            </div>
-
-            <div class="info-line">
-                <span class="label">Người gửi:</span> ${productData.senderName || '-'} ${productData.quantity ? '(' + productData.quantity + ')' : ''}
-            </div>
-
-            <div class="info-line">
-                <span class="label">Người nhận:</span> ${productData.receiverName || '-'} (${productData.receiverPhone || '-'})
-            </div>
-
-            <div class="info-line">
-                <span class="label">Loại hàng:</span> ${productData.productType || '-'}
-            </div>
-
-            <div class="info-line">
-                <span class="label">Thanh toán:</span> ${formatCurrency(printAmount)}đ ${paymentStatusText}
-            </div>
-
-            <div class="info-line">
-                <span class="label">Ghi chú:</span>
-            </div>
-
-            <div class="divider"></div>
-
-            <div class="footer">
-                <div>Công ty TNHH Võ Cúc Phương: ${formattedDateTime} </div>
-                <div><strong>Trạm:</strong> ${senderStationName.toUpperCase()}</div>
-                <div>18 Nguyễn Du, Phường Xuân An, Long Khánh, Đồng Nai</div>
-                <div>97i Nguyễn Duy Dương, P9,Quận 5.HCM</div>
-                <div>496B Điện Biên Phú, P25, Quận Bình Thạnh.HCM</div>
-                <div>ĐT: 0914 617 466 - 0942 67 0066 - Fax: -</div>
-               
+            <div class="receipt-footer">
+                <div>Trạm: ${senderStationName.toUpperCase()}</div>
+                <div>97i Nguyễn Duy Dương, P9,Q5,HCM</div>
+                <div>DT: <strong>0914 617 466 - 0942 67 0066</strong> - Fax: -</div>
+                <div>${formattedDateTime} bởi Cty DV xe du lịch Cúc Phương</div>
             </div>
         </div>
     `;
 
-    // Thêm CSS cho print
+    // CSS tối ưu cho máy in nhiệt - kích thước động theo khổ giấy
     const style = document.createElement('style');
     style.id = 'print-receipt-style';
     style.textContent = `
-        #print-receipt-container {
-            display: none;
+        #print-receipt-container { display: none; }
+
+        /* Các style này active khi #print-receipt-container hiển thị (trong print) */
+        #print-receipt-container .receipt {
+            width: 100%;
+            position: relative;
+        }
+
+        #print-receipt-container .receipt-qr {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: ${qrSize}mm;
+            height: ${qrSize}mm;
+            line-height: 0;
+        }
+
+        #print-receipt-container .receipt-qr svg {
+            width: ${qrSize}mm !important;
+            height: ${qrSize}mm !important;
+            display: block;
+        }
+
+        #print-receipt-container .receipt-title {
+            font-size: ${titleFontSize}px;
+            font-weight: bold;
+            margin-bottom: 6px;
+            padding-right: ${qrSize + 2}mm;
+        }
+
+        #print-receipt-container .receipt-row {
+            margin: 2px 0;
+            font-size: ${baseFontSize}px;
+            line-height: 1.5;
+        }
+
+        #print-receipt-container .receipt-label {
+            font-weight: bold;
+            font-size: ${baseFontSize}px;
+        }
+
+        #print-receipt-container .receipt-value {
+            font-size: ${baseFontSize}px;
+        }
+
+        #print-receipt-container .receipt-code {
+            font-size: ${codeFontSize}px;
+            font-weight: bold;
+        }
+
+        #print-receipt-container .receipt-amount {
+            font-weight: bold;
+            font-size: ${amountFontSize}px;
+        }
+
+        #print-receipt-container .receipt-divider {
+            border-top: 1px solid #000;
+            margin: 6px 0;
+        }
+
+        #print-receipt-container .receipt-footer {
+            font-size: ${footerFontSize}px;
+            line-height: 1.7;
         }
 
         @media print {
-            body * {
-                visibility: hidden;
+            @page {
+                size: ${paperWidth}mm auto;
+                margin: 0;
             }
 
-            #print-receipt-container,
-            #print-receipt-container * {
-                visibility: visible;
+            /* Ẩn toàn bộ nội dung trang gốc */
+            body > *:not(#print-receipt-container):not(#print-receipt-style) {
+                display: none !important;
+            }
+
+            html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                width: ${paperWidth}mm !important;
+                height: auto !important;
+                overflow: hidden !important;
+                background: white !important;
             }
 
             #print-receipt-container {
-                position: absolute;
-                left: 0;
-                top: 0;
-                display: block;
-                font-family: Arial, sans-serif;
-                padding: 20px;
-                font-size: 14px;
-                line-height: 1.6;
-            }
-
-            #print-receipt-container .receipt {
-                max-width: 600px;
+                display: block !important;
+                position: relative;
+                width: ${contentWidth}mm;
                 margin: 0 auto;
-            }
-
-            #print-receipt-container .title {
-                font-size: 20px;
-                font-weight: bold;
-                margin-bottom: 10px;
-            }
-
-            #print-receipt-container .info-line {
-                margin: 5px 0;
-            }
-
-            #print-receipt-container .label {
-                font-weight: bold;
-            }
-
-            #print-receipt-container .divider {
-                border-top: 1px dotted #999;
-                margin: 15px 0;
-            }
-
-            #print-receipt-container .footer {
-                margin-top: 20px;
-                font-size: 12px;
-                line-height: 1.8;
+                font-family: Arial, Helvetica, sans-serif;
+                font-size: ${baseFontSize}px;
+                line-height: 1.6;
+                color: #000;
+                padding: 3mm;
             }
         }
     `;
@@ -562,16 +730,18 @@ function printReceipt(productData) {
     document.body.appendChild(printDiv);
     document.head.appendChild(style);
 
-    // In
+    // QR sinh cục bộ (data URL) → in ngay, không cần đợi
     window.print();
 
-    // Xóa sau khi in xong
+    // Xóa sau khi in xong + focus lại ô nhập
     window.onafterprint = function () {
         const container = document.getElementById('print-receipt-container');
         const styleEl = document.getElementById('print-receipt-style');
         if (container) container.remove();
         if (styleEl) styleEl.remove();
         window.onafterprint = null;
+        // Focus lại ô người nhận sau khi đóng hộp thoại in
+        focusReceiverName();
     };
 }
 
@@ -593,10 +763,8 @@ async function resetForm() {
     const editRows = document.querySelectorAll('.edit-mode');
     editRows.forEach(row => row.classList.remove('edit-mode'));
 
-    // Tự động focus vào ô người nhận
-    setTimeout(() => {
-        document.getElementById('receiverName').focus();
-    }, 100);
+    // Focus vào ô người nhận
+    focusReceiverName();
 }
 
 // Kiểm tra xem sản phẩm có phải từ hôm nay không
@@ -612,7 +780,7 @@ function isToday(dateString) {
 }
 
 // Load dữ liệu từ Firestore với real-time listener
-async function loadProducts() {
+async function loadProducts(silentSync = false) {
     // Unsubscribe previous listener if exists
     if (unsubscribeProducts) {
         unsubscribeProducts();
@@ -622,7 +790,18 @@ async function loadProducts() {
     unsubscribeProducts = listenToProducts((updatedProducts) => {
         console.log('Products loaded:', updatedProducts.length, 'items');
         products = updatedProducts;
-        renderTable();
+
+        // Xóa pending products đã được server xác nhận
+        if (pendingProducts.length > 0) {
+            const serverIds = new Set(updatedProducts.map(p => String(p.id)));
+            pendingProducts = pendingProducts.filter(p => !serverIds.has(String(p.id)));
+        }
+
+        // silentSync = true → chỉ cập nhật data, KHÔNG render lại
+        if (!silentSync) {
+            renderTable();
+            focusReceiverName();
+        }
     });
 }
 
@@ -739,6 +918,13 @@ function renderTable() {
         });
     }
 
+    // Pagination
+    window._lastFilteredCount = filteredProducts.length;
+    const totalPages = Math.ceil(filteredProducts.length / PAGE_SIZE);
+    if (currentPage > totalPages && totalPages > 0) currentPage = totalPages;
+    const pageProducts = filteredProducts.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+    const pageOffset = (currentPage - 1) * PAGE_SIZE;
+
     // Render data rows
     let dataRowsHTML = '';
 
@@ -751,7 +937,8 @@ function renderTable() {
             </tr>
         `;
     } else {
-        dataRowsHTML = filteredProducts.map((product, index) => {
+        dataRowsHTML = pageProducts.map((product, index) => {
+            const index_real = pageOffset + index;
             const formattedDate = formatDateTime(product.sendDate || new Date().toISOString());
             const productAmount = parseInt(product.totalAmount) || 0;
             const formattedAmount = formatCurrency(productAmount);
@@ -770,7 +957,7 @@ function renderTable() {
                 return `
                 <tr data-id="${product.id || 'unknown'}" class="row-cancelled">
                     <td data-label="">-</td>
-                    <td data-label="STT">${index + 1}</td>
+                    <td data-label="STT">${index_real + 1}</td>
                     <td data-label="Mã" class="product-code">${product.id || '-'}</td>
                     <td data-label="Người gởi">${product.senderName || '-'}</td>
                     <td data-label="SĐT gởi">${product.senderPhone || '-'}</td>
@@ -801,7 +988,7 @@ function renderTable() {
                 data-total-amount="${product.totalAmount || 0}"
                 onclick="enableInlineEdit(this, event)">
                 <td data-label="" onclick="event.stopPropagation()"><input type="checkbox" class="row-checkbox" value="${product.id}" onchange="handleRowSelection()"></td>
-                <td data-label="STT">${index + 1}</td>
+                <td data-label="STT">${index_real + 1}</td>
                 <td data-label="Mã" class="product-code">${product.id || '-'}</td>
                 <td data-label="Người gởi" class="editable" data-field="senderName">${product.senderName || '-'}</td>
                 <td data-label="SĐT gởi" class="editable" data-field="senderPhone">${product.senderPhone || '-'}</td>
@@ -831,6 +1018,9 @@ function renderTable() {
     if (window.setupVNDCurrencyInput) {
         window.setupVNDCurrencyInput(document.getElementById('totalAmount'));
     }
+
+    // Render pagination
+    renderPagination(filteredProducts.length);
 
     // Cập nhật thống kê
     updateStatistics(filteredProducts);
@@ -909,6 +1099,11 @@ function updateStatistics(filteredProducts = null) {
 function editProduct(id) {
     const product = products.find(p => p.id === id);
     if (!product) return;
+
+    if (!isEditable(product)) {
+        showNotification('Không thể sửa.', 'error');
+        return;
+    }
 
     // Điền dữ liệu vào form
     document.getElementById('productId').value = product.id;
@@ -1095,12 +1290,31 @@ document.head.appendChild(style);
 
 // ===== INLINE EDITING FUNCTIONS =====
 
+const EDIT_TIMEOUT_MS = 2 * 60 * 1000; // 2 phút
+
+// Kiểm tra có còn trong thời gian cho phép sửa không
+function isEditable(product) {
+    if (!product || !product.sendDate) return false;
+    const created = new Date(product.sendDate);
+    return (Date.now() - created.getTime()) <= EDIT_TIMEOUT_MS;
+}
+
 let currentEditingRow = null;
 
 // Enable inline edit mode for a row
 function enableInlineEdit(row, event) {
     // Prevent editing if clicking on action buttons
     if (event.target.closest('.action-cell') || event.target.closest('button')) {
+        return;
+    }
+
+    const productId = row.dataset.id;
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
+
+    // Kiểm tra thời gian cho phép sửa
+    if (!isEditable(product)) {
+        showNotification('Không thể sửa.', 'error');
         return;
     }
 
@@ -1118,10 +1332,6 @@ function enableInlineEdit(row, event) {
     // Mark row as editing
     row.classList.add('editing-row');
     currentEditingRow = row;
-
-    const productId = row.dataset.id;
-    const product = products.find(p => p.id === productId);
-    if (!product) return;
 
     // Convert editable cells to inputs
     const editableCells = row.querySelectorAll('.editable');
@@ -1475,8 +1685,13 @@ function closeBulkEdit() {
 
 // In biên lai cho đơn hàng đã tạo
 function printProductReceipt(productId) {
-    // Tìm product trong danh sách
-    const product = products.find(p => p.id === productId);
+    // Tìm product trong danh sách (so sánh String để tránh lỗi type mismatch)
+    let product = products.find(p => String(p.id) === String(productId));
+
+    // Nếu không tìm thấy trong mảng chính, tìm trong pendingProducts (optimistic)
+    if (!product && pendingProducts.length > 0) {
+        product = pendingProducts.find(p => String(p.id) === String(productId));
+    }
 
     if (!product) {
         showAlertModal('Không tìm thấy đơn hàng!', { title: 'Lỗi', type: 'danger' });

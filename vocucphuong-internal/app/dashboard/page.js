@@ -256,9 +256,15 @@ export default function DashboardPage() {
   };
 
   // === Dashboard state ===
-  const [period, setPeriod] = useState('week');
+  const [period, setPeriod] = useState('day');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-  const [quickDate, setQuickDate] = useState('7days');
+  const [quickDate, setQuickDate] = useState('today');
+  // selectedMonth: 'YYYY-MM', selectedQuarter: { year, q }
+  const [selectedMonth, setSelectedMonth] = useState(() => new Date().toISOString().slice(0, 7));
+  const [selectedQuarter, setSelectedQuarter] = useState(() => {
+    const now = new Date();
+    return { year: now.getFullYear(), q: Math.ceil((now.getMonth() + 1) / 3) };
+  });
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -270,18 +276,34 @@ export default function DashboardPage() {
   const [monthlyTarget, setMonthlyTarget] = useState(DEFAULT_TARGET);
   const [showTargetEdit, setShowTargetEdit] = useState(false);
 
-  // Quick date shortcuts
-  const quickDates = [
-    { key: 'today', label: 'Hôm nay', period: 'day', getDate: () => new Date().toISOString().split('T')[0] },
-    { key: 'yesterday', label: 'Hôm qua', period: 'day', getDate: () => { const d = new Date(); d.setDate(d.getDate() - 1); return d.toISOString().split('T')[0]; } },
-    { key: '7days', label: '7 ngày', period: 'week', getDate: () => new Date().toISOString().split('T')[0] },
-    { key: '30days', label: '30 ngày', period: 'month', getDate: () => new Date().toISOString().split('T')[0] },
-  ];
+  // Xử lý khi chọn period mode
+  const handlePeriodChange = (newPeriod) => {
+    setPeriod(newPeriod);
+    setQuickDate('');
+    if (newPeriod === 'day') {
+      setSelectedDate(new Date().toISOString().split('T')[0]);
+      setQuickDate('today');
+    } else if (newPeriod === 'month') {
+      setSelectedDate(new Date(selectedMonth + '-01').toISOString().split('T')[0]);
+    } else if (newPeriod === 'quarter') {
+      const d = new Date(selectedQuarter.year, (selectedQuarter.q - 1) * 3, 1);
+      setSelectedDate(d.toISOString().split('T')[0]);
+    }
+  };
 
-  const handleQuickDate = (qd) => {
-    setQuickDate(qd.key);
-    setPeriod(qd.period);
-    setSelectedDate(qd.getDate());
+  // Xử lý chọn tháng
+  const handleMonthChange = (monthStr) => {
+    setSelectedMonth(monthStr);
+    setSelectedDate(new Date(monthStr + '-01').toISOString().split('T')[0]);
+    setQuickDate('');
+  };
+
+  // Xử lý chọn quý
+  const handleQuarterChange = (year, q) => {
+    setSelectedQuarter({ year, q });
+    const d = new Date(year, (q - 1) * 3, 1);
+    setSelectedDate(d.toISOString().split('T')[0]);
+    setQuickDate('');
   };
 
   useEffect(() => {
@@ -580,19 +602,69 @@ export default function DashboardPage() {
       <main style={styles.main}>
         {/* Filters */}
         <div style={styles.filters}>
-          <span style={styles.filterLabel}>Nhanh:</span>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            {quickDates.map(qd => (
-              <button key={qd.key} onClick={() => handleQuickDate(qd)} style={{ ...styles.quickDateBtn, ...(quickDate === qd.key ? styles.quickDateBtnActive : {}) }}>{qd.label}</button>
-            ))}
-          </div>
-          <span style={{ ...styles.filterLabel, marginLeft: '16px' }}>Xem theo:</span>
+          {/* Chọn kiểu xem */}
           <div style={styles.periodBtns}>
-            {[{ value: 'day', label: 'Ngày' }, { value: 'week', label: 'Tuần' }, { value: 'month', label: 'Tháng' }].map(opt => (
-              <button key={opt.value} onClick={() => { setPeriod(opt.value); setQuickDate(''); }} style={{ ...styles.periodBtn, ...(period === opt.value ? styles.periodBtnActive : styles.periodBtnInactive) }}>{opt.label}</button>
+            {[{ value: 'day', label: 'Ngày' }, { value: 'month', label: 'Tháng' }, { value: 'quarter', label: 'Quý' }].map(opt => (
+              <button key={opt.value} onClick={() => handlePeriodChange(opt.value)} style={{ ...styles.periodBtn, ...(period === opt.value ? styles.periodBtnActive : styles.periodBtnInactive) }}>{opt.label}</button>
             ))}
           </div>
-          <input type="date" value={selectedDate} onChange={(e) => { setSelectedDate(e.target.value); setQuickDate(''); }} style={styles.dateInput} />
+
+          {/* Input tương ứng với kiểu xem */}
+          {period === 'day' && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => { setSelectedDate(e.target.value); setQuickDate(''); }}
+                style={styles.dateInput}
+              />
+              <button
+                onClick={() => { setSelectedDate(new Date().toISOString().split('T')[0]); setQuickDate('today'); }}
+                style={{ ...styles.quickDateBtn, ...(quickDate === 'today' ? styles.quickDateBtnActive : {}) }}
+              >Hôm nay</button>
+              <button
+                onClick={() => { const d = new Date(); d.setDate(d.getDate() - 1); setSelectedDate(d.toISOString().split('T')[0]); setQuickDate('yesterday'); }}
+                style={{ ...styles.quickDateBtn, ...(quickDate === 'yesterday' ? styles.quickDateBtnActive : {}) }}
+              >Hôm qua</button>
+            </div>
+          )}
+
+          {period === 'month' && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <input
+                type="month"
+                value={selectedMonth}
+                onChange={(e) => handleMonthChange(e.target.value)}
+                style={styles.dateInput}
+              />
+              <button
+                onClick={() => handleMonthChange(new Date().toISOString().slice(0, 7))}
+                style={{ ...styles.quickDateBtn, ...(selectedMonth === new Date().toISOString().slice(0, 7) ? styles.quickDateBtnActive : {}) }}
+              >Tháng này</button>
+            </div>
+          )}
+
+          {period === 'quarter' && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <select
+                value={selectedQuarter.year}
+                onChange={(e) => handleQuarterChange(parseInt(e.target.value), selectedQuarter.q)}
+                style={styles.dateInput}
+              >
+                {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
+              </select>
+              <div style={styles.periodBtns}>
+                {[1, 2, 3, 4].map(q => (
+                  <button
+                    key={q}
+                    onClick={() => handleQuarterChange(selectedQuarter.year, q)}
+                    style={{ ...styles.periodBtn, ...(selectedQuarter.q === q ? styles.periodBtnActive : styles.periodBtnInactive) }}
+                  >Q{q}</button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {stats && <span style={{ marginLeft: 'auto', fontSize: '14px', color: '#64748b', fontWeight: '500' }}>📅 {stats.dateRange?.label}</span>}
         </div>
 

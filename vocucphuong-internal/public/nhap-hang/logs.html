@@ -6,7 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lịch sử chỉnh sửa - CTY DV XE DU LỊCH VÕ CÚC PHƯƠNG</title>
     <link rel="icon" type="image/png" href="images/logo.png">
-    <link rel="stylesheet" href="css/styles.css?v=6.0">
+    <link rel="stylesheet" href="css/styles.css?v=7.7">
+    <script src="js/theme.js?v=1.0"></script>
     <style>
         .logs-table {
             width: 100%;
@@ -190,6 +191,15 @@
                     <h1 class="logo">CTY DV XE DU LỊCH VÕ CÚC PHƯƠNG</h1>
                 </div>
                 <div class="user-info">
+                    <div class="theme-switcher">
+                        <div class="theme-btn active" data-t="default" title="Mặc định"></div>
+                        <div class="theme-btn" data-t="gray" title="Xám"></div>
+                        <div class="theme-btn" data-t="blue" title="Xanh dương"></div>
+                        <div class="theme-btn" data-t="purple" title="Tím"></div>
+                        <div class="theme-btn" data-t="red" title="Đỏ"></div>
+                        <div class="theme-btn" data-t="green" title="Xanh lá"></div>
+                        <div class="theme-btn" data-t="dark" title="Tối"></div>
+                    </div>
                     <span id="currentUser">User</span>
                     <span class="separator">|</span>
                     <a href="#" class="link" onclick="logout()">Thoát</a>
@@ -223,7 +233,7 @@
 
                 <!-- Filter Section -->
                 <div class="filter-section">
-                    <form id="filterForm">
+                    <form id="filterForm" autocomplete="off">
                         <!-- Dòng 1: Tìm kiếm chính -->
                         <div class="filter-row" style="margin-bottom: 12px;">
                             <div class="filter-group" style="flex: 2;">

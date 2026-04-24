@@ -42,7 +42,7 @@ function formatDDMMYYYY(date) {
 function generateProductId(date, stationCode, sequence) {
   const yymmdd = formatYYMMDD(date);
   const ss = stationCode.padStart(2, '0');
-  const nn = String(sequence).padStart(2, '0');
+  const nn = String(sequence);
   return `${yymmdd}.${ss}${nn}`;
 }
 
@@ -104,11 +104,12 @@ function isDocDuong(stationName) {
   return matched;
 }
 
-// Helper: Determine route based on sender station (matching original logic)
+// Helper: Determine route based on sender station
+// Hàng dọc đường luôn booking vào tuyến Quốc lộ
 function determineRoute(senderStation, receiverStation) {
   if (!senderStation) {
-    console.log('[RouteMapper] No senderStation, defaulting to "Sài Gòn- Long Khánh"');
-    return 'Sài Gòn- Long Khánh';
+    console.log('[RouteMapper] No senderStation, defaulting to SG→LK Quốc lộ');
+    return 'Sài Gòn - Long Khánh (Quốc lộ)';
   }
 
   const stationName = senderStation.toLowerCase();
@@ -134,8 +135,8 @@ function determineRoute(senderStation, receiverStation) {
   const isLongKhanhStation = longKhanhStations.some(name => stationName.includes(name));
 
   if (isLongKhanhStation) {
-    console.log(`[RouteMapper] "${senderStation}" → "Long Khánh - Sài Gòn" (station in LK area)`);
-    return 'Long Khánh - Sài Gòn';
+    console.log(`[RouteMapper] "${senderStation}" → "Long Khánh - Sài Gòn (Quốc lộ)"`);
+    return 'Long Khánh - Sài Gòn (Quốc lộ)';
   }
 
   // Các trạm ở khu vực Sài Gòn (GỬI TỪ Sài Gòn ĐI Long Khánh)
@@ -158,13 +159,13 @@ function determineRoute(senderStation, receiverStation) {
   const isSaigonStation = saigonStations.some(name => stationName.includes(name));
 
   if (isSaigonStation) {
-    console.log(`[RouteMapper] "${senderStation}" → "Sài Gòn- Long Khánh" (station in SG area)`);
-    return 'Sài Gòn- Long Khánh';
+    console.log(`[RouteMapper] "${senderStation}" → "Sài Gòn - Long Khánh (Quốc lộ)"`);
+    return 'Sài Gòn - Long Khánh (Quốc lộ)';
   }
 
-  // Default: Sài Gòn
-  console.log(`[RouteMapper] "${senderStation}" → "Sài Gòn- Long Khánh" (default)`);
-  return 'Sài Gòn- Long Khánh';
+  // Default: Sài Gòn → Long Khánh Quốc lộ
+  console.log(`[RouteMapper] "${senderStation}" → "Sài Gòn - Long Khánh (Quốc lộ)" (default)`);
+  return 'Sài Gòn - Long Khánh (Quốc lộ)';
 }
 
 // Helper: Làm tròn LÊN đến khung giờ 30 phút tiếp theo
@@ -251,6 +252,65 @@ function getTimeFromDate(date) {
   return { hours, minutes, totalMinutes: hours * 60 + minutes };
 }
 
+// Helper: Đảm bảo timeslots tồn tại cho date + route (tạo nếu chưa có)
+async function ensureTimeslotsExist(dateStr, route) {
+  // Check xem đã có timeslot cho date+route chưa
+  const existing = await queryOneTongHop(
+    'SELECT COUNT(*) as count FROM "TH_TimeSlots" WHERE date = $1 AND route = $2',
+    [dateStr, route]
+  );
+
+  if (parseInt(existing?.count || '0') > 0) return;
+
+  // Chưa có → lấy thông tin tuyến từ TH_Routes và tạo
+  let startTime = '05:30', endTime = '20:00', intervalMinutes = 30;
+  try {
+    const routeInfo = await queryOneTongHop(
+      'SELECT "operatingStart", "operatingEnd", "intervalMinutes" FROM "TH_Routes" WHERE name = $1 AND "isActive" = true',
+      [route]
+    );
+    if (routeInfo) {
+      startTime = routeInfo.operatingStart || startTime;
+      endTime = routeInfo.operatingEnd || endTime;
+      intervalMinutes = routeInfo.intervalMinutes || intervalMinutes;
+    }
+  } catch (e) { /* ignore */ }
+
+  // Fallback: detect hướng tuyến
+  const lower = (route || '').toLowerCase();
+  if (lower.startsWith('long khánh') || lower.startsWith('xuân lộc')) {
+    if (startTime === '05:30') { startTime = '03:30'; endTime = '18:00'; }
+  }
+
+  // Generate times
+  const times = [];
+  const [sH, sM] = startTime.split(':').map(Number);
+  const [eH, eM] = endTime.split(':').map(Number);
+  let cur = sH * 60 + sM;
+  const end = eH * 60 + eM;
+  while (cur <= end) {
+    times.push(`${String(Math.floor(cur / 60)).padStart(2, '0')}:${String(cur % 60).padStart(2, '0')}`);
+    cur += intervalMinutes;
+  }
+
+  // Batch insert
+  if (times.length > 0) {
+    const values = [];
+    const params = [];
+    let idx = 1;
+    for (const time of times) {
+      values.push(`($${idx++}, $${idx++}, $${idx++}, 'Xe 28G', '', '', '')`);
+      params.push(time, dateStr, route);
+    }
+    await queryTongHop(`
+      INSERT INTO "TH_TimeSlots" (time, date, route, type, code, driver, phone)
+      VALUES ${values.join(', ')}
+      ON CONFLICT (date, time, route) DO NOTHING
+    `, params);
+    console.log(`[ensureTimeslots] Tạo ${times.length} timeslots cho ${dateStr} "${route}"`);
+  }
+}
+
 // Helper: Find nearest timeslot (matching original timeslot-matcher logic)
 // Date đã là Vietnam time, đọc trực tiếp
 async function findNearestTimeslot(route, currentDate) {
@@ -260,9 +320,12 @@ async function findNearestTimeslot(route, currentDate) {
   const currentMinute = timeInfo.minutes;
   const currentTotalMinutes = timeInfo.totalMinutes;
 
-  console.log(`[findNearestTimeslot] Time: ${currentHour}:${currentMinute}`);
+  console.log(`[findNearestTimeslot] Time: ${currentHour}:${currentMinute}, route: "${route}"`);
 
   const todayDateStr = formatDDMMYYYY(now);
+
+  // Đảm bảo timeslots tồn tại cho ngày hôm nay
+  await ensureTimeslotsExist(todayDateStr, route);
 
   // Step 1: Find future timeslots today
   const todaySlots = await queryTongHop(`
@@ -270,6 +333,8 @@ async function findNearestTimeslot(route, currentDate) {
     WHERE date = $1 AND route = $2
     ORDER BY time ASC
   `, [todayDateStr, route]);
+
+  console.log(`[findNearestTimeslot] Found ${todaySlots.length} slots for ${todayDateStr} "${route}"`);
 
   // Filter to find future slots
   for (const slot of todaySlots) {
@@ -284,6 +349,9 @@ async function findNearestTimeslot(route, currentDate) {
   const tomorrow = new Date(now);
   tomorrow.setDate(tomorrow.getDate() + 1);
   const tomorrowDateStr = formatDDMMYYYY(tomorrow);
+
+  // Đảm bảo timeslots tồn tại cho ngày mai
+  await ensureTimeslotsExist(tomorrowDateStr, route);
 
   const tomorrowSlot = await queryOneTongHop(`
     SELECT * FROM "TH_TimeSlots"
@@ -302,7 +370,9 @@ async function createTongHopBooking(product) {
     // ✅ FIX: Use product's sendDate (already in UTC), NOT current server time!
     const now = product.sendDate ? new Date(product.sendDate) : new Date();
 
-    console.log(`[TongHop Integration] Creating booking for ${product.id}, route=${route}, sendDate=${now.toISOString()}`);
+    console.log(`[TongHop Integration] Creating booking for ${product.id}`);
+    console.log(`[TongHop Integration] senderStation="${product.senderStation}", station="${product.station}"`);
+    console.log(`[TongHop Integration] route="${route}", sendDate=${now.toISOString()}`);
 
     // Find nearest timeslot (future today or first tomorrow)
     let timeSlot = await findNearestTimeslot(route, now);

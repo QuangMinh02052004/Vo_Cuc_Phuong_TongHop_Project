@@ -30,6 +30,13 @@ function getDateRange(period, baseDate) {
       endDate = new Date(date.getFullYear(), date.getMonth() + 1, 0);
       break;
 
+    case 'quarter':
+      // Lấy quý (Q1=1-3, Q2=4-6, Q3=7-9, Q4=10-12)
+      const q = Math.ceil((date.getMonth() + 1) / 3);
+      startDate = new Date(date.getFullYear(), (q - 1) * 3, 1);
+      endDate = new Date(date.getFullYear(), q * 3, 0);
+      break;
+
     case 'day':
     default:
       // Lấy ngày
@@ -56,6 +63,10 @@ function getPreviousDateRange(period, baseDate) {
     case 'month':
       // Tháng trước
       date.setMonth(date.getMonth() - 1);
+      break;
+    case 'quarter':
+      // Quý trước
+      date.setMonth(date.getMonth() - 3);
       break;
     case 'day':
     default:

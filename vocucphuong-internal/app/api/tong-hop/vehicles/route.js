@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const vehicles = await queryTongHop('SELECT id, code as plate, type FROM "TH_Vehicles" ORDER BY code');
+    const vehicles = await queryTongHop('SELECT id, code, type FROM "TH_Vehicles" ORDER BY code');
     return NextResponse.json(vehicles);
   } catch (error) {
     console.error('Error fetching vehicles:', error);
@@ -18,7 +18,7 @@ export async function POST(request) {
     const { plate, code, type } = await request.json();
     const vehicleCode = code || plate;
     const result = await queryTongHop(
-      'INSERT INTO "TH_Vehicles" (code, type) VALUES ($1, $2) RETURNING id, code as plate, type',
+      'INSERT INTO "TH_Vehicles" (code, type) VALUES ($1, $2) RETURNING id, code, type',
       [vehicleCode, type || 'Limousine 9 chỗ']
     );
     return NextResponse.json(result[0], { status: 201 });

@@ -32,7 +32,7 @@ function formatYYMMDD(date) {
 function generateProductId(date, stationCode, sequence) {
   const yymmdd = formatYYMMDD(date);
   const ss = stationCode.padStart(2, '0');
-  const nn = String(sequence).padStart(2, '0');
+  const nn = String(sequence);
   return `${yymmdd}.${ss}${nn}`;
 }
 

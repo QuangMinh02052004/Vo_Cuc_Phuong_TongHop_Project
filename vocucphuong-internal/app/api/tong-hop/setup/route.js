@@ -99,6 +99,15 @@ export async function GET(request) {
     `);
     results.push('✅ TH_Bookings table ready');
 
+    // Thêm cột callStatus, printed nếu chưa có
+    try {
+      await queryTongHop(`ALTER TABLE "TH_Bookings" ADD COLUMN IF NOT EXISTS "callStatus" VARCHAR(100) DEFAULT 'Chưa gọi'`);
+      await queryTongHop(`ALTER TABLE "TH_Bookings" ADD COLUMN IF NOT EXISTS printed BOOLEAN DEFAULT false`);
+      results.push('✅ TH_Bookings callStatus/printed columns ready');
+    } catch (e) {
+      results.push('⚠️ TH_Bookings alter: ' + e.message);
+    }
+
     // Tạo bảng TH_Drivers
     await queryTongHop(`
       CREATE TABLE IF NOT EXISTS "TH_Drivers" (
@@ -219,9 +228,65 @@ export async function GET(request) {
       results.push('✅ Routes seeded (8 tuyến mặc định - khớp DatVe)');
     }
 
+    // Thêm cột callStatus vào TH_Bookings nếu chưa có
+    try {
+      await queryTongHop(`ALTER TABLE "TH_Bookings" ADD COLUMN IF NOT EXISTS "callStatus" VARCHAR(50) DEFAULT 'Chưa gọi'`);
+      results.push('✅ TH_Bookings callStatus column ready');
+    } catch (e) {
+      results.push('⚠️ TH_Bookings callStatus: ' + e.message);
+    }
+
+    // Tạo bảng TH_ActivityLog
+    await queryTongHop(`
+      CREATE TABLE IF NOT EXISTS "TH_ActivityLog" (
+        id SERIAL PRIMARY KEY,
+        action VARCHAR(50) NOT NULL,
+        description TEXT,
+        "bookingId" INTEGER,
+        "seatNumber" INTEGER,
+        "userName" VARCHAR(100),
+        date VARCHAR(20),
+        route VARCHAR(100),
+        "timeSlot" VARCHAR(10),
+        "createdAt" TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    results.push('✅ TH_ActivityLog table ready');
+
     // Clean expired seat locks
     await queryTongHop('DELETE FROM "TH_SeatLocks" WHERE "expiresAt" < NOW()');
     results.push('✅ Cleaned expired seat locks');
+
+    // Tạo bảng TH_VehicleStatus - Trạng thái xe
+    await queryTongHop(`
+      CREATE TABLE IF NOT EXISTS "TH_VehicleStatus" (
+        id SERIAL PRIMARY KEY,
+        "vehicleId" INTEGER REFERENCES "TH_Vehicles"(id) ON DELETE CASCADE,
+        status VARCHAR(30) DEFAULT 'ready',
+        note TEXT,
+        "updatedBy" VARCHAR(100),
+        "updatedAt" TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    results.push('✅ TH_VehicleStatus table ready');
+
+    // Tạo bảng TH_StaffTasks - Phân công công việc nhân viên
+    await queryTongHop(`
+      CREATE TABLE IF NOT EXISTS "TH_StaffTasks" (
+        id SERIAL PRIMARY KEY,
+        title VARCHAR(200) NOT NULL,
+        description TEXT,
+        "assignedTo" VARCHAR(100),
+        "createdBy" VARCHAR(100),
+        date VARCHAR(20),
+        "dueTime" VARCHAR(10),
+        status VARCHAR(20) DEFAULT 'pending',
+        priority VARCHAR(10) DEFAULT 'normal',
+        "createdAt" TIMESTAMP DEFAULT NOW(),
+        "updatedAt" TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    results.push('✅ TH_StaffTasks table ready');
 
     return NextResponse.json({
       success: true,

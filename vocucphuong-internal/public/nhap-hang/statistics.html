@@ -6,7 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Thống kê - CTY DV XE DU LỊCH VÕ CÚC PHƯƠNG</title>
     <link rel="icon" type="image/png" href="images/logo.png">
-    <link rel="stylesheet" href="css/styles.css?v=6.0">
+    <link rel="stylesheet" href="css/styles.css?v=7.7">
+    <script src="js/theme.js?v=1.0"></script>
 </head>
 
 <body>
@@ -18,6 +19,15 @@
                     <h1 class="logo">CTY DV XE DU LỊCH VÕ CÚC PHƯƠNG</h1>
                 </div>
                 <div class="user-info">
+                    <div class="theme-switcher">
+                        <div class="theme-btn active" data-t="default" title="Mặc định"></div>
+                        <div class="theme-btn" data-t="gray" title="Xám"></div>
+                        <div class="theme-btn" data-t="blue" title="Xanh dương"></div>
+                        <div class="theme-btn" data-t="purple" title="Tím"></div>
+                        <div class="theme-btn" data-t="red" title="Đỏ"></div>
+                        <div class="theme-btn" data-t="green" title="Xanh lá"></div>
+                        <div class="theme-btn" data-t="dark" title="Tối"></div>
+                    </div>
                     <span id="currentUser">User</span>
                     <span class="separator">|</span>
                     <a href="#" class="link" onclick="logout()">Thoát</a>
@@ -34,7 +44,6 @@
                 </div>
                 <div class="nav-right">
                     <span class="station-badge">Trạm: <strong class="station-name"></strong></span>
-                    
                 </div>
             </nav>
         </div>
@@ -47,7 +56,7 @@
                 <!-- Form tìm kiếm -->
                 <div class="search-section">
                     <h3 class="section-title">Tìm kiếm</h3>
-                    <form id="searchForm" class="search-form">
+                    <form id="searchForm" class="search-form" autocomplete="off">
                         <div class="search-row">
                             <div class="search-group">
                                 <input type="text" id="searchKeyword" name="searchKeyword"
@@ -114,6 +123,9 @@
                     </div>
                 </div>
 
+                <!-- Pagination -->
+                <div id="paginationContainer"></div>
+
                 <!-- Thống kê tổng quan - Hiển thị sau (dưới cùng) -->
                 <div class="statistics-container" id="statistics" style="margin-top: 30px;">
                     <!-- Thống kê sẽ được thêm bằng JavaScript -->
@@ -130,7 +142,7 @@
 
     <script src="js/modal.js?v=2.0"></script>
     <script type="module" src="js/auth.js?v=4.0"></script>
-    <script type="module" src="js/statistics.js?v=4.5"></script>
+    <script type="module" src="js/statistics.js?v=7.5"></script>
 </body>
 
 </html>

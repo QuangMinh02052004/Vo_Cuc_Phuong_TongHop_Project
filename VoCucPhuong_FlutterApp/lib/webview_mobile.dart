@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:webview_flutter/webview_flutter.dart' as wv;
 
 class WebViewWidget extends StatefulWidget {
@@ -155,7 +154,8 @@ class _WebViewWidgetState extends State<WebViewWidget>
   Widget build(BuildContext context) {
     super.build(context); // Required for AutomaticKeepAliveClientMixin
 
-    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
     if (_hasError) {
@@ -165,9 +165,7 @@ class _WebViewWidgetState extends State<WebViewWidget>
     return Stack(
       children: [
         // WebView
-        Positioned.fill(
-          child: wv.WebViewWidget(controller: _controller),
-        ),
+        Positioned.fill(child: wv.WebViewWidget(controller: _controller)),
 
         // Loading overlay
         if (_isLoading) _buildLoadingWidget(),
@@ -240,11 +238,7 @@ class _WebViewWidgetState extends State<WebViewWidget>
             width: 44,
             height: 44,
             alignment: Alignment.center,
-            child: Icon(
-              icon,
-              color: Colors.white,
-              size: 22,
-            ),
+            child: Icon(icon, color: Colors.white, size: 22),
           ),
         ),
       ),
@@ -290,10 +284,7 @@ class _WebViewWidgetState extends State<WebViewWidget>
                   const SizedBox(height: 12),
                   Text(
                     'Đang tải${widget.title != null ? ' ${widget.title}' : ''}... $_loadingProgress%',
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 14,
-                    ),
+                    style: TextStyle(color: Colors.grey[600], fontSize: 14),
                   ),
                 ],
               ),

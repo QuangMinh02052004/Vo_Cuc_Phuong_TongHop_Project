@@ -6,7 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CTY DỊCH VỤ XE DU LỊCH VÕ CÚC PHƯƠNG - Quản lý hàng hóa</title>
     <link rel="icon" type="image/png" href="images/logo.png">
-    <link rel="stylesheet" href="css/styles.css?v=6.1">
+    <link rel="stylesheet" href="css/styles.css?v=7.8">
+    <script src="js/theme.js?v=1.0"></script>
 </head>
 
 <body>
@@ -18,6 +19,15 @@
                     <h1 class="logo">CTY DV XE DU LỊCH VÕ CÚC PHƯƠNG</h1>
                 </div>
                 <div class="user-info">
+                    <div class="theme-switcher">
+                        <div class="theme-btn active" data-t="default" title="Mặc định"></div>
+                        <div class="theme-btn" data-t="gray" title="Xám"></div>
+                        <div class="theme-btn" data-t="blue" title="Xanh dương"></div>
+                        <div class="theme-btn" data-t="purple" title="Tím"></div>
+                        <div class="theme-btn" data-t="red" title="Đỏ"></div>
+                        <div class="theme-btn" data-t="green" title="Xanh lá"></div>
+                        <div class="theme-btn" data-t="dark" title="Tối"></div>
+                    </div>
                     <span id="currentUser">User</span>
                     <span class="separator">|</span>
                     <a href="#" class="link" onclick="logout()">Thoát</a>
@@ -45,7 +55,7 @@
             <section class="management-section">
                 <!-- Form tìm kiếm -->
                 <div class="search-section">
-                    <form id="searchForm" class="search-form" style="margin-top:0">
+                    <form id="searchForm" class="search-form" style="margin-top:0" autocomplete="off">
                         <div class="search-row">
                             <div class="search-group">
                                 <input type="text" id="searchKeyword" name="searchKeyword"
@@ -86,7 +96,7 @@
                 </div>
 
                 <!-- Form nhập liệu (ẩn, chỉ để link với các input) -->
-                <form id="productForm">
+                <form id="productForm" autocomplete="off">
                     <button type="submit" style="display: none;"></button>
                 </form>
 
@@ -106,7 +116,7 @@
                                 <th>NGÀY GỞI</th>
                                 <th>XE</th>
                                 <th>LOẠI HÀNG</th>
-                                <th>SỐ LƯỢNG</th>
+                                <th>SL</th>
                                 <th>TỔNG VND</th>
                                 <th>THANH TOÁN</th>
                                 <th>NHÂN VIÊN NHẬN</th>
@@ -145,7 +155,7 @@
                                     </select>
                                 </td>
                                 <td><input type="text" id="quantity" name="quantity"
-                                        placeholder="VD: số lượng + loại hàng" form="productForm"></td>
+                                        placeholder="VD: 1 thùng" form="productForm"></td>
                                 <td><input type="text" id="totalAmount" name="totalAmount" placeholder="" required
                                         inputmode="numeric" form="productForm"></td>
                                 <td>-</td>
@@ -156,6 +166,9 @@
                         </tbody>
                     </table>
                 </div>
+
+                <!-- Pagination -->
+                <div id="paginationContainer"></div>
 
                 <!-- Bulk Edit Panel -->
                 <div id="bulkEditPanel" class="bulk-edit-panel" style="display: none;">
@@ -199,6 +212,15 @@
             </div>
             <div class="confirm-modal-body">
                 <p>Chọn hành động bạn muốn thực hiện:</p>
+                <div class="print-size-setting">
+                    <label for="printSize">Khổ giấy in:</label>
+                    <select id="printSize">
+                        <option value="58">58mm</option>
+                        <option value="72">72mm</option>
+                        <option value="80">80mm</option>
+                        <option value="92" selected>92mm</option>
+                    </select>
+                </div>
             </div>
             <div class="confirm-modal-actions">
                 <button type="button" class="btn btn-success" id="btnSaveAndPrint">Lưu & In</button>
@@ -214,9 +236,10 @@
         </div>
     </footer>
 
+    <script src="js/qrcode.min.js"></script>
     <script src="js/modal.js?v=2.0"></script>
     <script type="module" src="js/auth.js?v=4.5"></script>
-    <script type="module" src="js/script.js?v=6.0"></script>
+    <script type="module" src="js/script.js?v=7.8"></script>
 </body>
 
 </html>

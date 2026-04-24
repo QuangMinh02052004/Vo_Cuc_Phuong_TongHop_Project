@@ -5,6 +5,41 @@ import { populateSelect, OPTIONS } from '../data/options.js';
 let allProducts = [];
 let searchFilters = {};
 
+const PAGE_SIZE = 20;
+let currentPage = 1;
+
+function renderPagination(totalItems, containerId = 'paginationContainer') {
+    const totalPages = Math.ceil(totalItems / PAGE_SIZE);
+    let container = document.getElementById(containerId);
+    if (!container) return;
+    if (totalPages <= 1) { container.innerHTML = ''; return; }
+    const start = (currentPage - 1) * PAGE_SIZE + 1;
+    const end = Math.min(currentPage * PAGE_SIZE, totalItems);
+    let html = `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 4px;font-size:14px;color:#6b7280;">
+        <span>${start}–${end} / <strong>${totalItems}</strong> đơn</span>
+        <div style="display:flex;gap:4px;align-items:center;">`;
+    html += `<button onclick="goToPage(1)" ${currentPage===1?'disabled':''} style="padding:5px 9px;border:1px solid #d1d5db;border-radius:6px;background:${currentPage===1?'#f3f4f6':'white'};cursor:${currentPage===1?'default':'pointer'};font-size:13px;">«</button>`;
+    html += `<button onclick="goToPage(${currentPage-1})" ${currentPage===1?'disabled':''} style="padding:5px 9px;border:1px solid #d1d5db;border-radius:6px;background:${currentPage===1?'#f3f4f6':'white'};cursor:${currentPage===1?'default':'pointer'};font-size:13px;">‹</button>`;
+    const range = [];
+    for (let i = Math.max(1, currentPage-2); i <= Math.min(totalPages, currentPage+2); i++) range.push(i);
+    range.forEach(p => {
+        const active = p === currentPage;
+        html += `<button onclick="goToPage(${p})" style="padding:5px 10px;border:1px solid ${active?'#0ea5e9':'#d1d5db'};border-radius:6px;background:${active?'#0ea5e9':'white'};color:${active?'white':'#374151'};font-weight:${active?'600':'400'};cursor:pointer;font-size:13px;">${p}</button>`;
+    });
+    html += `<button onclick="goToPage(${currentPage+1})" ${currentPage===totalPages?'disabled':''} style="padding:5px 9px;border:1px solid #d1d5db;border-radius:6px;background:${currentPage===totalPages?'#f3f4f6':'white'};cursor:${currentPage===totalPages?'default':'pointer'};font-size:13px;">›</button>`;
+    html += `<button onclick="goToPage(${totalPages})" ${currentPage===totalPages?'disabled':''} style="padding:5px 9px;border:1px solid #d1d5db;border-radius:6px;background:${currentPage===totalPages?'#f3f4f6':'white'};cursor:${currentPage===totalPages?'default':'pointer'};font-size:13px;">»</button>`;
+    html += `</div></div>`;
+    container.innerHTML = html;
+}
+
+function goToPage(page) {
+    const totalPages = Math.ceil(window._lastFilteredCount / PAGE_SIZE);
+    currentPage = Math.max(1, Math.min(page, totalPages || 1));
+    renderStatisticsTable();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+window.goToPage = goToPage;
+
 // Initialize
 document.addEventListener('DOMContentLoaded', async function () {
     // Load all products
@@ -61,6 +96,7 @@ function handleSearch(e) {
         deliveryStatus
     };
 
+    currentPage = 1;
     renderStatisticsTable();
     renderStatistics();
 }
@@ -69,6 +105,7 @@ function handleSearch(e) {
 function resetSearch() {
     document.getElementById('searchForm').reset();
     searchFilters = {};
+    currentPage = 1;
     renderStatisticsTable();
     renderStatistics();
 }
@@ -138,17 +175,26 @@ function renderStatisticsTable() {
     // Render table rows
     if (filteredProducts.length === 0) {
         tbody.innerHTML = '<tr><td colspan="12" style="text-align: center;">Không có dữ liệu</td></tr>';
+        renderPagination(0);
         return;
     }
 
-    tbody.innerHTML = filteredProducts.map((product, index) => {
+    // Pagination
+    window._lastFilteredCount = filteredProducts.length;
+    const totalPages = Math.ceil(filteredProducts.length / PAGE_SIZE);
+    if (currentPage > totalPages) currentPage = totalPages;
+    const pageOffset = (currentPage - 1) * PAGE_SIZE;
+    const pageProducts = filteredProducts.slice(pageOffset, pageOffset + PAGE_SIZE);
+
+    tbody.innerHTML = pageProducts.map((product, index) => {
+        const index_real = pageOffset + index;
         const deliveryStatus = product.deliveryStatus || 'pending';
         const deliveryStatusText = deliveryStatus === 'delivered' ? 'Đã giao' : 'Chưa giao';
         const deliveryStatusClass = deliveryStatus === 'delivered' ? 'status-delivered' : 'status-pending';
 
         return `
             <tr>
-                <td>${index + 1}</td>
+                <td>${index_real + 1}</td>
                 <td>${product.id || ''}</td>
                 <td>${product.senderName || ''}</td>
                 <td>${product.senderPhone || ''}</td>
@@ -163,6 +209,8 @@ function renderStatisticsTable() {
             </tr>
         `;
     }).join('');
+
+    renderPagination(filteredProducts.length);
 }
 
 // Format station name (remove number prefix)

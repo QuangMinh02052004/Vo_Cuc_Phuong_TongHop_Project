@@ -140,7 +140,7 @@ export async function addProduct(productData) {
             body: JSON.stringify(productData)
         });
 
-        return { success: true, id: data.product?.id || productData.id };
+        return { success: true, id: data.product?.id || data.data?.id || productData.id, product: data.product || data.data || null };
     } catch (error) {
         console.error('Error adding product:', error);
         return { success: false, error: error.message };
@@ -190,11 +190,11 @@ export async function deleteProduct(productId, cancelNote = '') {
 // Get all users (admin only)
 export async function getAllUsers() {
     try {
-        const data = await callAPI('/users', {
+        const data = await callAPI('/users?active=false', {
             method: 'GET'
         });
 
-        return data.users || [];
+        return data.data || data.users || [];
     } catch (error) {
         console.error('Error getting users:', error);
         return [];

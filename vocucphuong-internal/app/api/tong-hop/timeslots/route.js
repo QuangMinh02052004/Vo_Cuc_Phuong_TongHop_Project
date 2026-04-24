@@ -19,16 +19,19 @@ function generateTimes(startTime, endTime, intervalMinutes) {
   return times;
 }
 
-// Helper: Lấy danh sách times theo route (từ TH_Routes database, fallback theo hướng)
+// Helper: Lấy danh sách times theo route từ TH_Routes database
 async function getTimesForRoute(route) {
-  // Thử lấy từ TH_Routes database
   try {
     const routeInfo = await queryOneTongHop(
       'SELECT "operatingStart", "operatingEnd", "intervalMinutes" FROM "TH_Routes" WHERE name = $1 AND "isActive" = true',
       [route]
     );
     if (routeInfo) {
-      return generateTimes(routeInfo.operatingStart || '05:30', routeInfo.operatingEnd || '20:00', routeInfo.intervalMinutes || 30);
+      return generateTimes(
+        routeInfo.operatingStart || '05:30',
+        routeInfo.operatingEnd || '20:00',
+        routeInfo.intervalMinutes || 30
+      );
     }
   } catch (e) {
     console.warn('[Timeslots] Lỗi query TH_Routes:', e.message);
@@ -43,81 +46,103 @@ async function getTimesForRoute(route) {
   return generateTimes('05:30', '20:00', 30);
 }
 
-// Helper: Tạo các timeslot mặc định cho một ngày và route
-async function createDefaultTimeslots(date, route) {
+// Helper: Tạo timeslots cho date + route bằng batch INSERT ... ON CONFLICT
+async function ensureTimeslots(date, route) {
   const times = await getTimesForRoute(route);
-  const created = [];
 
-  for (const time of times) {
-    const existing = await queryOneTongHop(
-      `SELECT id FROM "TH_TimeSlots" WHERE time = $1 AND date = $2 AND route = $3`,
-      [time, date, route]
-    );
+  // Lấy danh sách time đã tồn tại
+  const existingSlots = await queryTongHop(
+    'SELECT time FROM "TH_TimeSlots" WHERE date = $1 AND route = $2',
+    [date, route]
+  );
+  const existingTimes = new Set(existingSlots.map(s => s.time));
 
-    if (!existing) {
-      const result = await queryTongHop(`
-        INSERT INTO "TH_TimeSlots" (time, date, route, type, code, driver, phone)
-        VALUES ($1, $2, $3, 'Xe 28G', '', '', '')
-        RETURNING *
-      `, [time, date, route]);
-      created.push(result[0]);
-    }
+  // Lọc ra các time chưa có
+  const missingTimes = times.filter(t => !existingTimes.has(t));
+
+  if (missingTimes.length === 0) return 0;
+
+  // Batch insert tất cả missing times trong 1 query
+  const values = [];
+  const params = [];
+  let paramIdx = 1;
+
+  for (const time of missingTimes) {
+    values.push(`($${paramIdx++}, $${paramIdx++}, $${paramIdx++}, 'Xe 28G', '', '', '')`);
+    params.push(time, date, route);
   }
 
-  console.log(`[Timeslots] Đã tạo ${created.length} timeslot mặc định cho ngày ${date} route "${route}"`);
-  return created;
+  await queryTongHop(`
+    INSERT INTO "TH_TimeSlots" (time, date, route, type, code, driver, phone)
+    VALUES ${values.join(', ')}
+    ON CONFLICT (date, time, route) DO NOTHING
+  `, params);
+
+  console.log(`[Timeslots] Tạo ${missingTimes.length} timeslot cho ${date} "${route}"`);
+  return missingTimes.length;
 }
 
-// GET /api/tong-hop/timeslots
+// GET /api/tong-hop/timeslots - Lấy timeslots, tự động tạo nếu chưa có
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const date = searchParams.get('date');
     const route = searchParams.get('route') || null;
 
-    // Query timeslots - SỬ DỤNG DISTINCT ON để loại bỏ duplicate
-    // Giữ lại record có ID nhỏ nhất (cũ nhất) cho mỗi time+date+route
-    let sqlQuery = `
-      SELECT DISTINCT ON (time, date, route) *
-      FROM "TH_TimeSlots"
-      WHERE 1=1
-    `;
+    // Auto-create: Nếu có date + route → đảm bảo timeslots đầy đủ
+    if (date && route) {
+      await ensureTimeslots(date, route);
+    } else if (date && !route) {
+      // Nếu chỉ có date → tạo cho tất cả tuyến active
+      try {
+        const activeRoutes = await queryTongHop('SELECT name FROM "TH_Routes" WHERE "isActive" = true');
+        for (const r of activeRoutes) {
+          await ensureTimeslots(date, r.name);
+        }
+      } catch (e) {
+        console.warn('[Timeslots] Lỗi query routes:', e.message);
+      }
+    }
+
+    // Query timeslots
+    let sqlQuery = 'SELECT * FROM "TH_TimeSlots" WHERE 1=1';
     const params = [];
     let paramIndex = 1;
 
     if (date) {
-      sqlQuery += ` AND date = $${paramIndex}`;
+      sqlQuery += ` AND date = $${paramIndex++}`;
       params.push(date);
-      paramIndex++;
     }
 
     if (route) {
-      sqlQuery += ` AND route = $${paramIndex}`;
+      sqlQuery += ` AND route = $${paramIndex++}`;
       params.push(route);
-      paramIndex++;
     }
 
-    // Order by time, date, route TRƯỚC (cho DISTINCT ON), rồi mới id (để chọn cái cũ nhất)
-    // Sau đó order lại theo date DESC, time ASC cho output
-    sqlQuery += ` ORDER BY time, date, route, id ASC`;
+    sqlQuery += ' ORDER BY date DESC, time ASC';
 
-    // Wrap trong subquery để có thể order lại
-    const limit = date ? 200 : 10000;
-    const finalQuery = `
-      SELECT * FROM (${sqlQuery}) AS deduped
-      ORDER BY date DESC, time ASC
-      LIMIT ${limit}
-    `;
+    const limit = date ? 500 : 10000;
+    sqlQuery += ` LIMIT ${limit}`;
 
-    const timeSlots = await queryTongHop(finalQuery, params);
-    return NextResponse.json(timeSlots);
+    const timeSlots = await queryTongHop(sqlQuery, params);
+
+    // Loại duplicate ở JS level (backup cho trường hợp lỗi unique constraint)
+    const seen = new Set();
+    const deduped = timeSlots.filter(s => {
+      const key = `${s.time}_${s.date}_${s.route}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    return NextResponse.json(deduped);
   } catch (error) {
     console.error('Error fetching timeslots:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
-// POST /api/tong-hop/timeslots - Tạo mới hoặc trả về slot đã tồn tại (UPSERT)
+// POST /api/tong-hop/timeslots - Tạo mới (UPSERT)
 export async function POST(request) {
   try {
     const body = await request.json();
@@ -127,38 +152,29 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Route is required' }, { status: 400 });
     }
 
-    // Sử dụng UPSERT để tránh race condition và đảm bảo không duplicate
-    // ON CONFLICT DO UPDATE để luôn trả về dữ liệu mới nhất
     const result = await queryTongHop(`
       INSERT INTO "TH_TimeSlots" (time, date, route, type, code, driver, phone)
       VALUES ($1, $2, $3, $4, $5, $6, $7)
       ON CONFLICT (date, time, route) DO UPDATE SET
-        type = COALESCE(EXCLUDED.type, "TH_TimeSlots".type),
-        code = COALESCE(EXCLUDED.code, "TH_TimeSlots".code),
-        driver = COALESCE(EXCLUDED.driver, "TH_TimeSlots".driver),
-        phone = COALESCE(EXCLUDED.phone, "TH_TimeSlots".phone)
+        type = COALESCE(NULLIF(EXCLUDED.type, ''), "TH_TimeSlots".type),
+        code = COALESCE(NULLIF(EXCLUDED.code, ''), "TH_TimeSlots".code),
+        driver = COALESCE(NULLIF(EXCLUDED.driver, ''), "TH_TimeSlots".driver),
+        phone = COALESCE(NULLIF(EXCLUDED.phone, ''), "TH_TimeSlots".phone)
       RETURNING *
     `, [time, date, route, type || 'Xe 28G', code || '', driver || '', phone || '']);
 
     const timeslot = result[0];
-    console.log(`[Timeslots] UPSERT: ${time} ${date} ${route} (ID: ${timeslot.id})`);
     return NextResponse.json(timeslot, { status: 201 });
   } catch (error) {
     console.error('Error creating timeslot:', error);
-    // Nếu lỗi unique constraint (race condition), thử lấy existing
     if (error.code === '23505') {
       try {
-        const body2 = await request.clone().json();
-        const existing = await queryOneTongHop(`
-          SELECT * FROM "TH_TimeSlots"
-          WHERE time = $1 AND date = $2 AND route = $3
-        `, [body2.time, body2.date, body2.route]);
-        if (existing) {
-          return NextResponse.json(existing, { status: 200 });
-        }
-      } catch (e) {
-        // ignore
-      }
+        const existing = await queryOneTongHop(
+          'SELECT * FROM "TH_TimeSlots" WHERE time = $1 AND date = $2 AND route = $3',
+          [body.time, body.date, body.route]
+        );
+        if (existing) return NextResponse.json(existing, { status: 200 });
+      } catch (e) { /* ignore */ }
     }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

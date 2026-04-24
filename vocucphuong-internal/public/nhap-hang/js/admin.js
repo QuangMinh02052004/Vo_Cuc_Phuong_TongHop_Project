@@ -117,7 +117,7 @@ function showAddUserModal() {
 
 // Show modal sửa user
 async function editUserHandler(userId) {
-    const user = users.find(u => u.id === userId);
+    const user = users.find(u => String(u.id) === String(userId));
 
     if (!user) return;
 
@@ -165,7 +165,7 @@ async function handleSaveUser(e) {
     const station = document.getElementById('modalStation').value;
 
     // Kiểm tra username đã tồn tại chưa (khi thêm mới hoặc sửa username)
-    const existingUser = users.find(u => u.username === username && u.id !== editingUserId);
+    const existingUser = users.find(u => u.username === username && String(u.id) !== String(editingUserId));
     if (existingUser) {
         showAlertModal('Tên đăng nhập đã tồn tại!', { title: 'Lỗi', type: 'warning' });
         return;
@@ -232,7 +232,7 @@ async function handleSaveUser(e) {
 
 // Xóa user
 async function deleteUserHandler(userId) {
-    const user = users.find(u => u.id === userId);
+    const user = users.find(u => String(u.id) === String(userId));
 
     if (!user) return;
 
