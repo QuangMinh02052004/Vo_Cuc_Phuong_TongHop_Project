@@ -1,4 +1,5 @@
 import { queryTongHop, queryOneTongHop, queryDatVe, queryOneDatVe } from '../../../../../../lib/database';
+import { findOrCreateDatveRoute } from '../../../../../../lib/route-sync';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -38,9 +39,23 @@ export async function PUT(request, { params }) {
        distance, operatingStart, operatingEnd, intervalMinutes, isActive, id]
     );
 
+    let datveRouteId = updated.datveRouteId || existing.datveRouteId;
     let datveSynced = false;
     let datveError = null;
-    if (existing.datveRouteId) {
+    let autoLinked = false;
+
+    if (!datveRouteId) {
+      try {
+        const result = await findOrCreateDatveRoute(updated);
+        datveRouteId = result.id;
+        autoLinked = true;
+        await queryTongHop('UPDATE "TH_Routes" SET "datveRouteId" = $1 WHERE id = $2', [datveRouteId, id]);
+      } catch (err) {
+        datveError = 'auto-link failed: ' + err.message;
+      }
+    }
+
+    if (datveRouteId) {
       try {
         await queryDatVe(
           `UPDATE routes SET
@@ -57,7 +72,7 @@ export async function PUT(request, { params }) {
             updated_at = NOW()
           WHERE id = $11`,
           [fromStation, toStation, price, duration, busType, distance, operatingStart, operatingEnd,
-           intervalMinutes, isActive, existing.datveRouteId]
+           intervalMinutes, isActive, datveRouteId]
         );
         datveSynced = true;
       } catch (err) {
@@ -65,7 +80,7 @@ export async function PUT(request, { params }) {
       }
     }
 
-    return NextResponse.json({ route: updated, datveSynced, datveError });
+    return NextResponse.json({ route: { ...updated, datveRouteId }, datveSynced, autoLinked, datveError });
   } catch (error) {
     console.error('[admin/sync/routes/:id] PUT', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -80,13 +95,21 @@ export async function DELETE(request, { params }) {
       return NextResponse.json({ error: 'Tuyến không tồn tại' }, { status: 404 });
     }
 
+    let datveRouteId = existing.datveRouteId;
+    if (!datveRouteId) {
+      try {
+        const result = await findOrCreateDatveRoute(existing);
+        datveRouteId = result.id;
+      } catch {}
+    }
+
     let datveSynced = false;
     let datveError = null;
-    if (existing.datveRouteId) {
+    if (datveRouteId) {
       try {
         await queryDatVe(
           'UPDATE routes SET is_active = false, updated_at = NOW() WHERE id = $1',
-          [existing.datveRouteId]
+          [datveRouteId]
         );
         datveSynced = true;
       } catch (err) {

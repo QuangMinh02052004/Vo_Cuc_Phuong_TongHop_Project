@@ -1,19 +1,20 @@
 import { queryTongHop, queryOneTongHop, queryDatVe, queryOneDatVe } from '../../../../../lib/database';
+import { autoLinkAllUnlinked } from '../../../../../lib/route-sync';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-async function ensureDatveRouteIdColumn() {
-  await queryTongHop(`
-    ALTER TABLE "TH_Routes" ADD COLUMN IF NOT EXISTS "datveRouteId" TEXT
-  `);
-}
-
 export async function GET() {
   try {
-    await ensureDatveRouteIdColumn();
+    await queryTongHop(`ALTER TABLE "TH_Routes" ADD COLUMN IF NOT EXISTS "datveRouteId" TEXT`);
+    let autoSync = null;
+    try {
+      autoSync = await autoLinkAllUnlinked();
+    } catch (err) {
+      console.error('[admin/sync/routes] auto-link error:', err.message);
+    }
     const rows = await queryTongHop('SELECT * FROM "TH_Routes" ORDER BY name ASC');
-    return NextResponse.json({ routes: rows });
+    return NextResponse.json({ routes: rows, autoSync });
   } catch (error) {
     console.error('[admin/sync/routes] GET', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -22,7 +23,7 @@ export async function GET() {
 
 export async function POST(request) {
   try {
-    await ensureDatveRouteIdColumn();
+    await queryTongHop(`ALTER TABLE "TH_Routes" ADD COLUMN IF NOT EXISTS "datveRouteId" TEXT`);
     const body = await request.json();
     const {
       name, routeType = 'quoc_lo', fromStation = '', toStation = '',
