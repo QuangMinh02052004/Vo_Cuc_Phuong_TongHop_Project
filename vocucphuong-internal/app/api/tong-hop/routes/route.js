@@ -1,15 +1,15 @@
-import { queryTongHop, queryOneTongHop } from '../../../../lib/database';
+import { queryTongHop, queryOneTongHop, queryDatVe, queryOneDatVe } from '../../../../lib/database';
+import { autoLinkAllUnlinked, autoLinkFromDatve } from '../../../../lib/route-sync';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-// GET /api/tong-hop/routes - Lấy danh sách tuyến đường
 export async function GET() {
   try {
-    const routes = await queryTongHop(`
-      SELECT * FROM "TH_Routes" ORDER BY name ASC
-    `);
-
+    await queryTongHop(`ALTER TABLE "TH_Routes" ADD COLUMN IF NOT EXISTS "datveRouteId" TEXT`);
+    try { await autoLinkAllUnlinked(); } catch (err) { console.error('[tong-hop/routes] auto-link error:', err.message); }
+    try { await autoLinkFromDatve(); } catch (err) { console.error('[tong-hop/routes] reverse auto-link error:', err.message); }
+    const routes = await queryTongHop('SELECT * FROM "TH_Routes" ORDER BY name ASC');
     return NextResponse.json(routes);
   } catch (error) {
     console.error('[Routes] GET Error:', error);
@@ -17,31 +17,52 @@ export async function GET() {
   }
 }
 
-// POST /api/tong-hop/routes - Tạo tuyến đường mới
 export async function POST(request) {
   try {
+    await queryTongHop(`ALTER TABLE "TH_Routes" ADD COLUMN IF NOT EXISTS "datveRouteId" TEXT`);
     const body = await request.json();
-    const { name, routeType, fromStation, toStation, price, duration, busType, seats, distance, operatingStart, operatingEnd, intervalMinutes } = body;
+    const {
+      name, routeType = 'quoc_lo', fromStation = '', toStation = '',
+      price = 0, duration = '', busType = 'Ghế ngồi', seats = 28,
+      distance = '', operatingStart = '05:30', operatingEnd = '20:00',
+      intervalMinutes = 30, isActive = true,
+    } = body;
 
     if (!name) {
       return NextResponse.json({ success: false, error: 'Tên tuyến là bắt buộc' }, { status: 400 });
     }
 
-    // Check duplicate
-    const existing = await queryOneTongHop(
-      'SELECT id FROM "TH_Routes" WHERE name = $1', [name]
-    );
-    if (existing) {
+    const dup = await queryOneTongHop('SELECT id FROM "TH_Routes" WHERE name = $1', [name]);
+    if (dup) {
       return NextResponse.json({ success: false, error: 'Tuyến đường đã tồn tại' }, { status: 400 });
     }
 
-    const result = await queryOneTongHop(`
-      INSERT INTO "TH_Routes" (name, "routeType", "fromStation", "toStation", price, duration, "busType", seats, distance, "operatingStart", "operatingEnd", "intervalMinutes")
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-      RETURNING *
-    `, [name, routeType || 'quoc_lo', fromStation || '', toStation || '', price || 0, duration || '', busType || 'Ghế ngồi', seats || 28, distance || '', operatingStart || '05:30', operatingEnd || '20:00', intervalMinutes || 30]);
+    let datveRouteId = null;
+    try {
+      const datveRow = await queryOneDatVe(
+        `INSERT INTO routes (
+          id, origin, destination, price, duration, bus_type, distance,
+          operating_start, operating_end, interval_minutes, is_active, created_at, updated_at
+        ) VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
+        RETURNING id`,
+        [fromStation, toStation, price, duration, busType, distance || null, operatingStart, operatingEnd, intervalMinutes, isActive]
+      );
+      datveRouteId = datveRow?.id || null;
+    } catch (err) {
+      console.error('[tong-hop/routes] DatVe insert failed:', err.message);
+    }
 
-    return NextResponse.json({ success: true, route: result }, { status: 201 });
+    const result = await queryOneTongHop(
+      `INSERT INTO "TH_Routes"
+        (name, "routeType", "fromStation", "toStation", price, duration, "busType", seats, distance,
+         "operatingStart", "operatingEnd", "intervalMinutes", "isActive", "datveRouteId")
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+       RETURNING *`,
+      [name, routeType, fromStation, toStation, price, duration, busType, seats, distance,
+       operatingStart, operatingEnd, intervalMinutes, isActive, datveRouteId]
+    );
+
+    return NextResponse.json({ success: true, route: result, datveSynced: !!datveRouteId }, { status: 201 });
   } catch (error) {
     console.error('[Routes] POST Error:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

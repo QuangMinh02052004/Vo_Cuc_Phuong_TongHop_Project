@@ -1,5 +1,5 @@
 import { queryTongHop, queryOneTongHop, queryDatVe, queryOneDatVe } from '../../../../../lib/database';
-import { autoLinkAllUnlinked } from '../../../../../lib/route-sync';
+import { autoLinkAllUnlinked, autoLinkFromDatve } from '../../../../../lib/route-sync';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -12,6 +12,12 @@ export async function GET() {
       autoSync = await autoLinkAllUnlinked();
     } catch (err) {
       console.error('[admin/sync/routes] auto-link error:', err.message);
+    }
+    try {
+      const back = await autoLinkFromDatve();
+      autoSync = { ...(autoSync || {}), createdFromDatve: back.created };
+    } catch (err) {
+      console.error('[admin/sync/routes] reverse auto-link error:', err.message);
     }
     const rows = await queryTongHop('SELECT * FROM "TH_Routes" ORDER BY name ASC');
     return NextResponse.json({ routes: rows, autoSync });
