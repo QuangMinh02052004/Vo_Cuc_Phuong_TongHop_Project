@@ -550,7 +550,7 @@ export default function DashboardPage() {
       <div style={loginStyles.overlay}>
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         <div style={loginStyles.card}>
-          <h1 style={loginStyles.title}>📊 Báo Cáo Doanh Thu</h1>
+          <h1 style={loginStyles.title}>Báo Cáo Doanh Thu</h1>
           <p style={loginStyles.subtitle}>Đăng nhập để xem báo cáo</p>
           {loginError && <div style={loginStyles.error}>{loginError}</div>}
           <form onSubmit={handleLogin}>
@@ -572,7 +572,7 @@ export default function DashboardPage() {
     return (
       <div style={loginStyles.overlay}>
         <div style={loginStyles.card}>
-          <p style={loginStyles.accessDenied}>⛔ Bạn không có quyền truy cập</p>
+          <p style={loginStyles.accessDenied}>Bạn không có quyền truy cập</p>
           <p style={{ textAlign: 'center', color: '#64748b', fontSize: '14px', marginBottom: '20px' }}>
             Chỉ tài khoản admin mới được xem báo cáo.<br />Đang đăng nhập: <strong>{authUser.fullName || authUser.username}</strong> ({authUser.role})
           </p>
@@ -589,13 +589,14 @@ export default function DashboardPage() {
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       <header style={styles.header}>
         <div style={styles.headerLeft}>
-          <Link href="/" style={styles.backBtn}>← </Link>
-          <h1 style={styles.title}>📊 Quản Lý Doanh Thu</h1>
+          <Link href="/" style={styles.backBtn}>←</Link>
+          <h1 style={styles.title}>Quản Lý Doanh Thu</h1>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          {stats && <button style={styles.exportBtn} onClick={() => exportToCSV(stats)}>↓ Xuất Báo Cáo</button>}
-          <button onClick={handleLogout} style={{ padding: '8px 14px', backgroundColor: '#ef4444', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '500', cursor: 'pointer' }} title={`Đăng xuất (${authUser.fullName || authUser.username})`}>🔓 Đăng xuất</button>
-          <span style={{ fontSize: '14px', color: '#64748b' }}>CÔNG TY TNHH VÕ CÚC PHƯƠNG</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <Link href="/admin/routes" style={{ padding: '8px 14px', backgroundColor: '#fff', color: '#0f172a', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', fontWeight: '500', textDecoration: 'none' }}>Quản lý Tuyến & Xe</Link>
+          {stats && <button style={styles.exportBtn} onClick={() => exportToCSV(stats)}>Xuất Báo Cáo</button>}
+          <button onClick={handleLogout} style={{ padding: '8px 14px', backgroundColor: '#fff', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: '6px', fontSize: '13px', fontWeight: '500', cursor: 'pointer' }} title={`Đăng xuất (${authUser.fullName || authUser.username})`}>Đăng xuất</button>
+          <span style={{ fontSize: '13px', color: '#64748b' }}>CÔNG TY TNHH VÕ CÚC PHƯƠNG</span>
         </div>
       </header>
 
@@ -665,7 +666,7 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {stats && <span style={{ marginLeft: 'auto', fontSize: '14px', color: '#64748b', fontWeight: '500' }}>📅 {stats.dateRange?.label}</span>}
+          {stats && <span style={{ marginLeft: 'auto', fontSize: '14px', color: '#64748b', fontWeight: '500' }}>{stats.dateRange?.label}</span>}
         </div>
 
         {loading ? (
@@ -675,7 +676,7 @@ export default function DashboardPage() {
             {/* Summary Cards */}
             <div style={styles.cardsGrid}>
               <div style={{ ...styles.card, ...styles.cardBlue }}>
-                <div style={styles.cardHeader}><span style={styles.cardLabel}>💰 Tổng Doanh Thu</span></div>
+                <div style={styles.cardHeader}><span style={styles.cardLabel}>Tổng Doanh Thu</span></div>
                 <div style={styles.cardValue}>{formatCurrency(stats.summary?.totalRevenue || 0)}</div>
                 <div style={styles.cardSubtext}>
                   <span style={{ opacity: 0.8 }}>so với {stats.prevDateRange?.label}</span>
@@ -684,7 +685,7 @@ export default function DashboardPage() {
               </div>
               <div style={{ ...styles.card, cursor: 'pointer' }} onClick={() => loadOrderDetails('nhaphang')} title="Bấm để xem chi tiết">
                 <div style={styles.cardHeader}>
-                  <span style={{ ...styles.cardLabel, color: '#64748b' }}>📦 Nhập Hàng</span>
+                  <span style={{ ...styles.cardLabel, color: '#64748b' }}>Nhập Hàng</span>
                   <span style={{ fontSize: '11px', color: '#0284c7' }}>Chi tiết →</span>
                 </div>
                 <div style={{ ...styles.cardValue, color: '#1e293b' }}>{formatCurrency(stats.summary?.nhapHangRevenue || 0)}</div>
@@ -695,7 +696,7 @@ export default function DashboardPage() {
               </div>
               <div style={{ ...styles.card, cursor: 'pointer' }} onClick={() => loadOrderDetails('tonghop')} title="Bấm để xem chi tiết">
                 <div style={styles.cardHeader}>
-                  <span style={{ ...styles.cardLabel, color: '#64748b' }}>🚌 Hành Khách</span>
+                  <span style={{ ...styles.cardLabel, color: '#64748b' }}>Hành Khách</span>
                   <span style={{ fontSize: '11px', color: '#0284c7' }}>Chi tiết →</span>
                 </div>
                 <div style={{ ...styles.cardValue, color: '#1e293b' }}>{formatCurrency(stats.summary?.tongHopRevenue || 0)}</div>
@@ -706,7 +707,7 @@ export default function DashboardPage() {
               </div>
               <div style={{ ...styles.card, cursor: 'pointer' }} onClick={() => loadOrderDetails('datve')} title="Bấm để xem chi tiết">
                 <div style={styles.cardHeader}>
-                  <span style={{ ...styles.cardLabel, color: '#64748b' }}>🎫 Đặt Vé Online</span>
+                  <span style={{ ...styles.cardLabel, color: '#64748b' }}>Đặt Vé Online</span>
                   <span style={{ fontSize: '11px', color: '#0284c7' }}>Chi tiết →</span>
                 </div>
                 <div style={{ ...styles.cardValue, color: '#1e293b' }}>{formatCurrency(stats.summary?.datVeRevenue || 0)}</div>
@@ -716,7 +717,7 @@ export default function DashboardPage() {
                 </div>
               </div>
               <div style={styles.card}>
-                <div style={styles.cardHeader}><span style={{ ...styles.cardLabel, color: '#64748b' }}>📈 Giao Dịch</span></div>
+                <div style={styles.cardHeader}><span style={{ ...styles.cardLabel, color: '#64748b' }}>Giao Dịch</span></div>
                 <div style={{ ...styles.cardValue, color: '#1e293b' }}>{totalOrders + (stats.summary?.totalOnlineBookings || 0)}</div>
                 <div style={styles.cardSubtext}><span style={{ color: '#64748b' }}>trong kỳ báo cáo</span></div>
               </div>
@@ -726,7 +727,7 @@ export default function DashboardPage() {
             {chartData.length > 1 && (
               <div style={{ ...styles.section, marginBottom: '24px' }}>
                 <div style={styles.sectionHeaderBlue}>
-                  <h2 style={{ ...styles.sectionTitle, color: '#0284c7' }}>📈 Biểu Đồ Doanh Thu</h2>
+                  <h2 style={{ ...styles.sectionTitle, color: '#0284c7' }}>Biểu Đồ Doanh Thu</h2>
                 </div>
                 <div style={styles.sectionBody}>
                   <MiniChart data={chartData} />
@@ -737,7 +738,7 @@ export default function DashboardPage() {
             {/* Details Grid */}
             <div style={styles.detailsGrid}>
               <div style={styles.section}>
-                <div style={styles.sectionHeaderBlue}><h2 style={{ ...styles.sectionTitle, color: '#0284c7' }}>📦 Chi Tiết Nhập Hàng</h2></div>
+                <div style={styles.sectionHeaderBlue}><h2 style={{ ...styles.sectionTitle, color: '#0284c7' }}>Chi Tiết Nhập Hàng</h2></div>
                 <div style={styles.sectionBody}>
                   <div style={styles.statsRow}>
                     <div style={styles.statBox}><div style={styles.statValue}>{stats.nhapHang?.overview?.totalOrders || 0}</div><div style={styles.statLabel}>Tổng đơn</div></div>
@@ -762,7 +763,7 @@ export default function DashboardPage() {
               </div>
 
               <div style={styles.section}>
-                <div style={styles.sectionHeaderBlue}><h2 style={{ ...styles.sectionTitle, color: '#0284c7' }}>🚌 Chi Tiết Hành Khách</h2></div>
+                <div style={styles.sectionHeaderBlue}><h2 style={{ ...styles.sectionTitle, color: '#0284c7' }}>Chi Tiết Hành Khách</h2></div>
                 <div style={styles.sectionBody}>
                   <div style={styles.statsRow2}>
                     <div style={styles.statBox}><div style={styles.statValue}>{stats.tongHop?.overview?.totalBookings || 0}</div><div style={styles.statLabel}>Tổng booking</div></div>
@@ -792,7 +793,7 @@ export default function DashboardPage() {
               </div>
 
               <div style={styles.section}>
-                <div style={styles.sectionHeaderBlue}><h2 style={{ ...styles.sectionTitle, color: '#0284c7' }}>🎫 Chi Tiết Đặt Vé Online</h2></div>
+                <div style={styles.sectionHeaderBlue}><h2 style={{ ...styles.sectionTitle, color: '#0284c7' }}>Chi Tiết Đặt Vé Online</h2></div>
                 <div style={styles.sectionBody}>
                   <div style={styles.statsRow}>
                     <div style={styles.statBox}><div style={styles.statValue}>{stats.datVe?.overview?.totalBookings || 0}</div><div style={styles.statLabel}>Tổng vé</div></div>
