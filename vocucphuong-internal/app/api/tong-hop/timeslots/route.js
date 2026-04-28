@@ -83,24 +83,27 @@ async function ensureTimeslots(date, route) {
 }
 
 // GET /api/tong-hop/timeslots - Lấy timeslots, tự động tạo nếu chưa có
+// Hỗ trợ ?since=ISO để lấy delta (chỉ slots updated sau timestamp) — KHÔNG auto-create trong delta mode
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const date = searchParams.get('date');
     const route = searchParams.get('route') || null;
+    const since = searchParams.get('since');
 
-    // Auto-create: Nếu có date + route → đảm bảo timeslots đầy đủ
-    if (date && route) {
-      await ensureTimeslots(date, route);
-    } else if (date && !route) {
-      // Nếu chỉ có date → tạo cho tất cả tuyến active
-      try {
-        const activeRoutes = await queryTongHop('SELECT name FROM "TH_Routes" WHERE "isActive" = true');
-        for (const r of activeRoutes) {
-          await ensureTimeslots(date, r.name);
+    // Auto-create chỉ khi KHÔNG phải delta mode (delta mode tránh side-effect tốn DB)
+    if (!since) {
+      if (date && route) {
+        await ensureTimeslots(date, route);
+      } else if (date && !route) {
+        try {
+          const activeRoutes = await queryTongHop('SELECT name FROM "TH_Routes" WHERE "isActive" = true');
+          for (const r of activeRoutes) {
+            await ensureTimeslots(date, r.name);
+          }
+        } catch (e) {
+          console.warn('[Timeslots] Lỗi query routes:', e.message);
         }
-      } catch (e) {
-        console.warn('[Timeslots] Lỗi query routes:', e.message);
       }
     }
 
@@ -108,6 +111,11 @@ export async function GET(request) {
     let sqlQuery = 'SELECT * FROM "TH_TimeSlots" WHERE 1=1';
     const params = [];
     let paramIndex = 1;
+
+    if (since) {
+      sqlQuery += ` AND "updatedAt" > $${paramIndex++}`;
+      params.push(since);
+    }
 
     if (date) {
       sqlQuery += ` AND date = $${paramIndex++}`;
@@ -119,10 +127,13 @@ export async function GET(request) {
       params.push(route);
     }
 
-    sqlQuery += ' ORDER BY date DESC, time ASC';
-
-    const limit = date ? 500 : 10000;
-    sqlQuery += ` LIMIT ${limit}`;
+    if (since) {
+      sqlQuery += ' ORDER BY "updatedAt" ASC LIMIT 1000';
+    } else {
+      sqlQuery += ' ORDER BY date DESC, time ASC';
+      const limit = date ? 500 : 10000;
+      sqlQuery += ` LIMIT ${limit}`;
+    }
 
     const timeSlots = await queryTongHop(sqlQuery, params);
 
@@ -135,6 +146,10 @@ export async function GET(request) {
       return true;
     });
 
+    if (since) {
+      const serverTime = new Date().toISOString();
+      return NextResponse.json({ timeSlots: deduped, serverTime });
+    }
     return NextResponse.json(deduped);
   } catch (error) {
     console.error('Error fetching timeslots:', error);

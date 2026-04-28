@@ -151,6 +151,26 @@ export async function POST(request) {
       quantity = 1    // Số lượng (= số vé)
     } = body;
 
+    // Idempotency: bảo đảm cột tồn tại + index UNIQUE để tránh double-insert khi retry
+    await queryTongHop(`ALTER TABLE "TH_Bookings" ADD COLUMN IF NOT EXISTS "clientReqId" TEXT`);
+    await queryTongHop(`CREATE UNIQUE INDEX IF NOT EXISTS "UQ_Bookings_clientReqId" ON "TH_Bookings" ("clientReqId") WHERE "clientReqId" IS NOT NULL`);
+
+    // Nếu productId đã có ở TH_Bookings → skip (idempotent)
+    if (productId) {
+      const existing = await queryTongHop(
+        `SELECT id, "seatNumber", "timeSlotId" FROM "TH_Bookings" WHERE "clientReqId" LIKE $1`,
+        [`${productId}#%`]
+      );
+      if (existing.length > 0) {
+        console.log(`[Webhook NhapHang] Đơn ${productId} đã có ${existing.length} booking, skip`);
+        return NextResponse.json({
+          success: true,
+          message: 'Đơn đã tồn tại, bỏ qua (idempotent)',
+          data: { productId, bookingsCreated: 0, skipped: existing.length }
+        });
+      }
+    }
+
     // Validate required fields
     if (!receiverName || !receiverPhone) {
       return NextResponse.json({
@@ -195,34 +215,39 @@ export async function POST(request) {
         break;
       }
 
+      // clientReqId = "<productId>#<seatNumber>" → đảm bảo idempotent ngay cả với quantity > 1
+      const reqId = productId ? `${productId}#${seatNumber}` : null;
+
       const result = await queryTongHop(`
         INSERT INTO "TH_Bookings" (
           "timeSlotId", phone, name, gender, nationality,
           "pickupMethod", "pickupAddress", "dropoffMethod", "dropoffAddress",
-          note, "seatNumber", amount, paid, "timeSlot", date, route
+          note, "seatNumber", amount, paid, "timeSlot", date, route, "clientReqId"
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+        ON CONFLICT ("clientReqId") DO NOTHING
         RETURNING *
       `, [
         timeSlot.id,
         receiverPhone,
-        cleanName,              // Tên đã bỏ phần viết tắt
+        cleanName,
         '', // gender
         '', // nationality
-        'Dọc đường', // pickupMethod
-        senderStation || '', // pickupAddress - điểm đón
-        'Dọc đường', // dropoffMethod
-        dropoffAddress,         // Điểm trả đã match (vd: "54. Trà Cổ")
-        `giao ${cleanName} ${quantity}`, // Note format: "giao minh 1"
+        'Dọc đường',
+        senderStation || '',
+        'Dọc đường',
+        dropoffAddress,
+        `giao ${cleanName} ${quantity}`,
         seatNumber,
-        0, // amount - hàng dọc đường thường không tính tiền vé
-        0, // paid
+        0,
+        0,
         time,
         formattedDate,
-        route
+        route,
+        reqId,
       ]);
 
-      createdBookings.push(result[0]);
+      if (result.length > 0) createdBookings.push(result[0]);
     }
 
     console.log(`[Webhook NhapHang] Created ${createdBookings.length} booking(s) for order ${productId}`);

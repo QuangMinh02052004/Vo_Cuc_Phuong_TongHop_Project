@@ -9,10 +9,18 @@ export async function GET(request) {
     const date = searchParams.get('date');
     const route = searchParams.get('route');
     const search = searchParams.get('search');
+    const since = searchParams.get('since'); // ISO timestamp - delta mode
 
     let sqlQuery = 'SELECT * FROM "TH_Bookings" WHERE 1=1';
     const params = [];
     let paramIndex = 1;
+
+    if (since) {
+      // Delta mode: chỉ trả về booking đã update sau timestamp
+      sqlQuery += ` AND "updatedAt" > $${paramIndex}`;
+      params.push(since);
+      paramIndex++;
+    }
 
     if (date) {
       sqlQuery += ` AND date = $${paramIndex}`;
@@ -32,11 +40,17 @@ export async function GET(request) {
       paramIndex++;
     }
 
-    // Giới hạn 500 kết quả gần nhất
-    sqlQuery += ' ORDER BY "createdAt" DESC LIMIT 500';
+    // Delta mode: ORDER BY updatedAt ASC, không LIMIT (delta thường nhỏ)
+    // Full mode: LIMIT 500 gần nhất
+    if (since) {
+      sqlQuery += ' ORDER BY "updatedAt" ASC LIMIT 1000';
+    } else {
+      sqlQuery += ' ORDER BY "createdAt" DESC LIMIT 500';
+    }
 
     const bookings = await queryTongHop(sqlQuery, params);
-    return NextResponse.json(bookings);
+    const serverTime = new Date().toISOString();
+    return NextResponse.json(since ? { bookings, serverTime } : bookings);
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

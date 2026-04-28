@@ -366,6 +366,22 @@ async function findNearestTimeslot(route, currentDate) {
 // Helper: Create TongHop booking for Dọc Đường orders (DIRECT DATABASE, matching original logic)
 async function createTongHopBooking(product) {
   try {
+    // Idempotency: bảo đảm cột + index UNIQUE để tránh double-insert khi retry/concurrent
+    await queryTongHop(`ALTER TABLE "TH_Bookings" ADD COLUMN IF NOT EXISTS "clientReqId" TEXT`);
+    await queryTongHop(`CREATE UNIQUE INDEX IF NOT EXISTS "UQ_Bookings_clientReqId" ON "TH_Bookings" ("clientReqId") WHERE "clientReqId" IS NOT NULL`);
+
+    // Skip nếu đã sync (productId đã tồn tại trong TH_Bookings)
+    if (product.id) {
+      const existing = await queryOneTongHop(
+        `SELECT id FROM "TH_Bookings" WHERE "clientReqId" = $1 LIMIT 1`,
+        [String(product.id)]
+      );
+      if (existing) {
+        console.log(`[TongHop Integration] Skip - đơn ${product.id} đã có booking ${existing.id}`);
+        return existing.id;
+      }
+    }
+
     const route = determineRoute(product.senderStation, product.station);
     // ✅ FIX: Use product's sendDate (already in UTC), NOT current server time!
     const now = product.sendDate ? new Date(product.sendDate) : new Date();
@@ -423,29 +439,31 @@ async function createTongHopBooking(product) {
     // Format note: "giao {name} {quantity}"
     const bookingNote = formatBookingNote(cleanName, product.productType, product.quantity);
 
-    // Create booking with correct format (matching original)
+    // Create booking với clientReqId = product.id (idempotent ON CONFLICT)
     const booking = await queryOneTongHop(`
       INSERT INTO "TH_Bookings" (
         "timeSlotId", phone, name, "pickupMethod", "pickupAddress",
         "dropoffMethod", "dropoffAddress", note, "seatNumber",
-        amount, paid, "timeSlot", date, route
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+        amount, paid, "timeSlot", date, route, "clientReqId"
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+      ON CONFLICT ("clientReqId") DO UPDATE SET "updatedAt" = NOW()
       RETURNING id
     `, [
       timeSlot.id,
       product.receiverPhone || '',
-      cleanName,              // Tên đã bỏ phần viết tắt
-      'Tại bến',           // pickupMethod - matching original
-      'tại bến',           // pickupAddress - matching original (lowercase)
-      'Dọc đường',         // dropoffMethod
-      dropoffAddress,      // Điểm trả đã match (vd: "54. Trà Cổ")
-      bookingNote,         // Format: "giao {cleanName} {quantity}"
+      cleanName,
+      'Tại bến',
+      'tại bến',
+      'Dọc đường',
+      dropoffAddress,
+      bookingNote,
       nextSeat,
-      parseFloat(product.totalAmount) || 0,  // amount
-      parseFloat(product.totalAmount) || 0,  // paid (already paid as freight)
+      parseFloat(product.totalAmount) || 0,
+      parseFloat(product.totalAmount) || 0,
       timeSlot.time,
       timeSlot.date,
-      route
+      route,
+      product.id ? String(product.id) : null,
     ]);
 
     console.log(`[TongHop Integration] ✅ Created booking: ${booking.id} with seat ${nextSeat}, note: "${bookingNote}"`);

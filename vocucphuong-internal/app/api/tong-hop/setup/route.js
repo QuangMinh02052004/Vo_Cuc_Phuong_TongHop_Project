@@ -108,6 +108,17 @@ export async function GET(request) {
       results.push('⚠️ TH_Bookings alter: ' + e.message);
     }
 
+    // Idempotency key cho realtime sync (NhapHang webhook chống double-insert khi retry)
+    try {
+      await queryTongHop(`ALTER TABLE "TH_Bookings" ADD COLUMN IF NOT EXISTS "clientReqId" TEXT`);
+      await queryTongHop(`CREATE UNIQUE INDEX IF NOT EXISTS "UQ_Bookings_clientReqId" ON "TH_Bookings" ("clientReqId") WHERE "clientReqId" IS NOT NULL`);
+      await queryTongHop(`CREATE INDEX IF NOT EXISTS "IDX_Bookings_updatedAt" ON "TH_Bookings" ("updatedAt")`);
+      await queryTongHop(`CREATE INDEX IF NOT EXISTS "IDX_TimeSlots_updatedAt" ON "TH_TimeSlots" ("updatedAt")`);
+      results.push('✅ TH_Bookings clientReqId + updatedAt indexes ready');
+    } catch (e) {
+      results.push('⚠️ TH_Bookings clientReqId migration: ' + e.message);
+    }
+
     // Tạo bảng TH_Drivers
     await queryTongHop(`
       CREATE TABLE IF NOT EXISTS "TH_Drivers" (
