@@ -8,6 +8,19 @@ export async function GET() {
   try {
     await queryTongHop(`ALTER TABLE "TH_Routes" ADD COLUMN IF NOT EXISTS "datveRouteId" TEXT`);
     await queryTongHop(`ALTER TABLE "TH_Routes" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP`);
+
+    // Dọn dẹp: nếu có row active dùng chung datveRouteId với row đã soft-delete → là bản auto-tạo lại, soft-delete luôn
+    await queryTongHop(`
+      UPDATE "TH_Routes"
+      SET "deletedAt" = NOW(), "isActive" = false, "updatedAt" = NOW()
+      WHERE "deletedAt" IS NULL
+        AND "datveRouteId" IS NOT NULL
+        AND "datveRouteId" IN (
+          SELECT "datveRouteId" FROM "TH_Routes"
+          WHERE "datveRouteId" IS NOT NULL AND "deletedAt" IS NOT NULL
+        )
+    `);
+
     try { await autoLinkAllUnlinked(); } catch (err) { console.error('[tong-hop/routes] auto-link error:', err.message); }
     try { await autoLinkFromDatve(); } catch (err) { console.error('[tong-hop/routes] reverse auto-link error:', err.message); }
     const routes = await queryTongHop('SELECT * FROM "TH_Routes" WHERE "deletedAt" IS NULL ORDER BY name ASC');
