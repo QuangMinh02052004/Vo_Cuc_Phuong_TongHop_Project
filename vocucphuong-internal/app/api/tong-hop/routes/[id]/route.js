@@ -81,8 +81,12 @@ export async function PUT(request, { params }) {
 export async function DELETE(request, { params }) {
   try {
     const { id } = await params;
+    await queryTongHop(`ALTER TABLE "TH_Routes" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP`);
     const existing = await queryOneTongHop('SELECT * FROM "TH_Routes" WHERE id = $1', [id]);
-    if (existing?.datveRouteId) {
+    if (!existing) {
+      return NextResponse.json({ success: false, error: 'Tuyến không tồn tại' }, { status: 404 });
+    }
+    if (existing.datveRouteId) {
       try {
         await queryDatVe(
           'UPDATE routes SET is_active = false, updated_at = NOW() WHERE id = $1',
@@ -92,8 +96,11 @@ export async function DELETE(request, { params }) {
         console.error('[tong-hop/routes/:id] DatVe deactivate failed:', err.message);
       }
     }
-    await queryTongHop('DELETE FROM "TH_Routes" WHERE id = $1', [id]);
-    return NextResponse.json({ success: true, message: 'Đã xóa tuyến đường' });
+    await queryTongHop(
+      'UPDATE "TH_Routes" SET "deletedAt" = NOW(), "isActive" = false, "updatedAt" = NOW() WHERE id = $1',
+      [id]
+    );
+    return NextResponse.json({ success: true, message: 'Đã xóa tuyến đường (soft delete)' });
   } catch (error) {
     console.error('[Routes] DELETE Error:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

@@ -63,7 +63,8 @@ export async function findOrCreateDatveRoute(thRoute, datveRoutesCache = null) {
 
 export async function autoLinkAllUnlinked() {
   await queryTongHop(`ALTER TABLE "TH_Routes" ADD COLUMN IF NOT EXISTS "datveRouteId" TEXT`);
-  const thRoutes = await queryTongHop('SELECT * FROM "TH_Routes" WHERE "datveRouteId" IS NULL');
+  await queryTongHop(`ALTER TABLE "TH_Routes" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP`);
+  const thRoutes = await queryTongHop('SELECT * FROM "TH_Routes" WHERE "datveRouteId" IS NULL AND "deletedAt" IS NULL');
   if (thRoutes.length === 0) return { linked: 0, created: 0 };
 
   const datveRoutes = await queryDatVe('SELECT id, origin, destination FROM routes');
@@ -89,6 +90,7 @@ export async function autoLinkAllUnlinked() {
 // Reverse autolink: DatVe routes chưa có TH_Routes → tạo TH_Routes
 export async function autoLinkFromDatve() {
   await queryTongHop(`ALTER TABLE "TH_Routes" ADD COLUMN IF NOT EXISTS "datveRouteId" TEXT`);
+  await queryTongHop(`ALTER TABLE "TH_Routes" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP`);
   const datveRoutes = await queryDatVe(
     `SELECT id, origin, destination, price, duration, bus_type, distance,
             operating_start, operating_end, interval_minutes, is_active
@@ -96,7 +98,7 @@ export async function autoLinkFromDatve() {
   );
   if (datveRoutes.length === 0) return { created: 0 };
 
-  const thRoutes = await queryTongHop('SELECT id, name, "fromStation", "toStation", "routeType", "datveRouteId" FROM "TH_Routes"');
+  const thRoutes = await queryTongHop('SELECT id, name, "fromStation", "toStation", "routeType", "datveRouteId" FROM "TH_Routes" WHERE "deletedAt" IS NULL');
   const linkedDatveIds = new Set(thRoutes.map((th) => th.datveRouteId).filter(Boolean));
 
   let created = 0;
