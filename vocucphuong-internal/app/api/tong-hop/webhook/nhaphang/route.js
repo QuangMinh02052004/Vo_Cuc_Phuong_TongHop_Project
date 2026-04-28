@@ -151,9 +151,10 @@ export async function POST(request) {
       quantity = 1    // Số lượng (= số vé)
     } = body;
 
-    // Idempotency: bảo đảm cột tồn tại + index UNIQUE để tránh double-insert khi retry
+    // Idempotency: bảo đảm cột tồn tại + full UNIQUE index để ON CONFLICT inference work
     await queryTongHop(`ALTER TABLE "TH_Bookings" ADD COLUMN IF NOT EXISTS "clientReqId" TEXT`);
-    await queryTongHop(`CREATE UNIQUE INDEX IF NOT EXISTS "UQ_Bookings_clientReqId" ON "TH_Bookings" ("clientReqId") WHERE "clientReqId" IS NOT NULL`);
+    await queryTongHop(`DROP INDEX IF EXISTS "UQ_Bookings_clientReqId"`);
+    await queryTongHop(`CREATE UNIQUE INDEX IF NOT EXISTS "UQ_Bookings_clientReqId" ON "TH_Bookings" ("clientReqId")`);
 
     // Nếu productId đã có ở TH_Bookings → skip (idempotent)
     if (productId) {

@@ -366,9 +366,10 @@ async function findNearestTimeslot(route, currentDate) {
 // Helper: Create TongHop booking for Dọc Đường orders (DIRECT DATABASE, matching original logic)
 async function createTongHopBooking(product) {
   try {
-    // Idempotency: bảo đảm cột + index UNIQUE để tránh double-insert khi retry/concurrent
+    // Idempotency: bảo đảm cột + full UNIQUE index để ON CONFLICT inference work
     await queryTongHop(`ALTER TABLE "TH_Bookings" ADD COLUMN IF NOT EXISTS "clientReqId" TEXT`);
-    await queryTongHop(`CREATE UNIQUE INDEX IF NOT EXISTS "UQ_Bookings_clientReqId" ON "TH_Bookings" ("clientReqId") WHERE "clientReqId" IS NOT NULL`);
+    await queryTongHop(`DROP INDEX IF EXISTS "UQ_Bookings_clientReqId"`);
+    await queryTongHop(`CREATE UNIQUE INDEX IF NOT EXISTS "UQ_Bookings_clientReqId" ON "TH_Bookings" ("clientReqId")`);
 
     // Skip nếu đã sync (productId đã tồn tại trong TH_Bookings)
     if (product.id) {

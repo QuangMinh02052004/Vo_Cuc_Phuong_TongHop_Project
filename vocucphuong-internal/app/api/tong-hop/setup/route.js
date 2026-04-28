@@ -109,9 +109,11 @@ export async function GET(request) {
     }
 
     // Idempotency key cho realtime sync (NhapHang webhook chống double-insert khi retry)
+    // Full UNIQUE index (KHÔNG partial) để ON CONFLICT inference work; PostgreSQL treat NULL distinct
     try {
       await queryTongHop(`ALTER TABLE "TH_Bookings" ADD COLUMN IF NOT EXISTS "clientReqId" TEXT`);
-      await queryTongHop(`CREATE UNIQUE INDEX IF NOT EXISTS "UQ_Bookings_clientReqId" ON "TH_Bookings" ("clientReqId") WHERE "clientReqId" IS NOT NULL`);
+      await queryTongHop(`DROP INDEX IF EXISTS "UQ_Bookings_clientReqId"`);
+      await queryTongHop(`CREATE UNIQUE INDEX IF NOT EXISTS "UQ_Bookings_clientReqId" ON "TH_Bookings" ("clientReqId")`);
       await queryTongHop(`CREATE INDEX IF NOT EXISTS "IDX_Bookings_updatedAt" ON "TH_Bookings" ("updatedAt")`);
       await queryTongHop(`CREATE INDEX IF NOT EXISTS "IDX_TimeSlots_updatedAt" ON "TH_TimeSlots" ("updatedAt")`);
       results.push('✅ TH_Bookings clientReqId + updatedAt indexes ready');
