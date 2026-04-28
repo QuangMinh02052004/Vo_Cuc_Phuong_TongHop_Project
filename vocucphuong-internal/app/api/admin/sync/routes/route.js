@@ -7,6 +7,20 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     await queryTongHop(`ALTER TABLE "TH_Routes" ADD COLUMN IF NOT EXISTS "datveRouteId" TEXT`);
+    await queryTongHop(`ALTER TABLE "TH_Routes" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP`);
+
+    // Dọn dẹp: row active dùng chung datveRouteId với row đã soft-delete → là bản auto-tạo lại, soft-delete luôn
+    await queryTongHop(`
+      UPDATE "TH_Routes"
+      SET "deletedAt" = NOW(), "isActive" = false, "updatedAt" = NOW()
+      WHERE "deletedAt" IS NULL
+        AND "datveRouteId" IS NOT NULL
+        AND "datveRouteId" IN (
+          SELECT "datveRouteId" FROM "TH_Routes"
+          WHERE "datveRouteId" IS NOT NULL AND "deletedAt" IS NOT NULL
+        )
+    `);
+
     let autoSync = null;
     try {
       autoSync = await autoLinkAllUnlinked();
@@ -19,7 +33,7 @@ export async function GET() {
     } catch (err) {
       console.error('[admin/sync/routes] reverse auto-link error:', err.message);
     }
-    const rows = await queryTongHop('SELECT * FROM "TH_Routes" ORDER BY name ASC');
+    const rows = await queryTongHop('SELECT * FROM "TH_Routes" WHERE "deletedAt" IS NULL ORDER BY name ASC');
     return NextResponse.json({ routes: rows, autoSync });
   } catch (error) {
     console.error('[admin/sync/routes] GET', error);

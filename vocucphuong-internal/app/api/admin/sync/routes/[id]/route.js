@@ -117,7 +117,11 @@ export async function DELETE(request, { params }) {
       }
     }
 
-    await queryTongHop('DELETE FROM "TH_Routes" WHERE id = $1', [id]);
+    await queryTongHop(`ALTER TABLE "TH_Routes" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP`);
+    await queryTongHop(
+      'UPDATE "TH_Routes" SET "deletedAt" = NOW(), "isActive" = false, "updatedAt" = NOW() WHERE id = $1',
+      [id]
+    );
 
     return NextResponse.json({ success: true, datveSynced, datveError });
   } catch (error) {
