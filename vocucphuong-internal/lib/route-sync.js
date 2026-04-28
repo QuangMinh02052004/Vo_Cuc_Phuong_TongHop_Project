@@ -99,7 +99,9 @@ export async function autoLinkFromDatve() {
   if (datveRoutes.length === 0) return { created: 0 };
 
   const thRoutes = await queryTongHop('SELECT id, name, "fromStation", "toStation", "routeType", "datveRouteId" FROM "TH_Routes" WHERE "deletedAt" IS NULL');
-  const linkedDatveIds = new Set(thRoutes.map((th) => th.datveRouteId).filter(Boolean));
+  // linkedDatveIds bao gồm CẢ row đã soft-delete để không tự tạo lại tuyến đã xóa
+  const allLinks = await queryTongHop('SELECT "datveRouteId" FROM "TH_Routes" WHERE "datveRouteId" IS NOT NULL');
+  const linkedDatveIds = new Set(allLinks.map((r) => r.datveRouteId));
 
   let created = 0;
   for (const dv of datveRoutes) {
@@ -127,7 +129,7 @@ export async function autoLinkFromDatve() {
     const name = `${dvFromStripped.replace(/\b\w/g, (c) => c.toUpperCase())} - ${dvToStripped.replace(/\b\w/g, (c) => c.toUpperCase())} (${typeLabel})`;
     try {
       // Skip nếu TH_Route đã có name trùng (chưa có UNIQUE constraint)
-      const existed = await queryTongHop('SELECT id FROM "TH_Routes" WHERE name = $1 LIMIT 1', [name]);
+      const existed = await queryTongHop('SELECT id FROM "TH_Routes" WHERE name = $1 AND "deletedAt" IS NULL LIMIT 1', [name]);
       if (existed.length > 0) {
         await queryTongHop('UPDATE "TH_Routes" SET "datveRouteId" = $1 WHERE id = $2', [dv.id, existed[0].id]);
         linkedDatveIds.add(dv.id);
