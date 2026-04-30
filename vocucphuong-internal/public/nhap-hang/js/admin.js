@@ -11,6 +11,61 @@ import { OPTIONS } from '../data/options.js';
 let editingUserId = null;
 let users = [];
 
+// Preset permissions theo role/template
+const PERMISSION_PRESETS = {
+    employee: {
+        scope: 'own_station',
+        perms: ['phongve.view', 'phongve.create', 'phongve.edit', 'kho.view', 'kho.edit', 'thongke.view']
+    },
+    warehouse_manager: {
+        scope: 'all_stations',
+        perms: ['phongve.view', 'kho.view', 'kho.edit', 'thongke.view', 'logs.view']
+    },
+    admin: {
+        scope: 'all_stations',
+        perms: ['phongve.view', 'phongve.create', 'phongve.edit', 'phongve.cancel', 'kho.view', 'kho.edit', 'thongke.view', 'logs.view', 'users.manage']
+    },
+    none: {
+        scope: 'own_station',
+        perms: []
+    }
+};
+
+function applyPreset(presetName) {
+    const preset = PERMISSION_PRESETS[presetName];
+    if (!preset) return;
+
+    document.querySelectorAll('#modalPermGrid input[type="checkbox"][data-perm]').forEach(cb => {
+        cb.checked = preset.perms.includes(cb.dataset.perm);
+    });
+
+    const scopeRadio = document.querySelector(`input[name="modalScope"][value="${preset.scope}"]`);
+    if (scopeRadio) scopeRadio.checked = true;
+}
+
+function getSelectedPermissions() {
+    return Array.from(document.querySelectorAll('#modalPermGrid input[type="checkbox"][data-perm]:checked'))
+        .map(cb => cb.dataset.perm);
+}
+
+function getSelectedScope() {
+    const radio = document.querySelector('input[name="modalScope"]:checked');
+    return radio ? radio.value : 'own_station';
+}
+
+function setSelectedPermissions(perms) {
+    const set = new Set(Array.isArray(perms) ? perms : []);
+    document.querySelectorAll('#modalPermGrid input[type="checkbox"][data-perm]').forEach(cb => {
+        cb.checked = set.has(cb.dataset.perm);
+    });
+}
+
+function setSelectedScope(scope) {
+    const value = scope === 'all_stations' ? 'all_stations' : 'own_station';
+    const radio = document.querySelector(`input[name="modalScope"][value="${value}"]`);
+    if (radio) radio.checked = true;
+}
+
 // Khởi tạo
 document.addEventListener('DOMContentLoaded', async function () {
     // Kiểm tra quyền admin
@@ -29,6 +84,18 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     // Setup form
     document.getElementById('userForm').addEventListener('submit', handleSaveUser);
+
+    // Setup preset buttons
+    document.querySelectorAll('.perm-presets [data-preset]').forEach(btn => {
+        btn.addEventListener('click', () => applyPreset(btn.dataset.preset));
+    });
+
+    // Khi đổi role → áp preset tương ứng (chỉ khi tạo mới hoặc user chưa tinh chỉnh)
+    document.getElementById('modalRole').addEventListener('change', (e) => {
+        const role = e.target.value;
+        if (role === 'admin') applyPreset('admin');
+        else applyPreset('employee');
+    });
 });
 
 // Load users từ Firestore
@@ -112,6 +179,7 @@ function showAddUserModal() {
     document.getElementById('modalUsername').disabled = false;
     document.getElementById('modalRole').disabled = false;
     populateStationDropdown();
+    applyPreset('employee');
     document.getElementById('userModal').classList.add('show');
 }
 
@@ -134,6 +202,16 @@ async function editUserHandler(userId) {
     // Populate station dropdown first, then set value
     populateStationDropdown();
     document.getElementById('modalStation').value = user.station || '';
+
+    // Permissions + scope: nếu user chưa có thì áp preset theo role
+    const userPerms = Array.isArray(user.permissions) ? user.permissions : [];
+    const userScope = user.scope || (user.role === 'admin' ? 'all_stations' : 'own_station');
+    if (userPerms.length > 0) {
+        setSelectedPermissions(userPerms);
+        setSelectedScope(userScope);
+    } else {
+        applyPreset(user.role === 'admin' ? 'admin' : 'employee');
+    }
 
     // Disable username nếu là admin
     if (user.username === 'admin') {
@@ -163,6 +241,8 @@ async function handleSaveUser(e) {
     const role = document.getElementById('modalRole').value;
     const active = document.getElementById('modalActive').checked;
     const station = document.getElementById('modalStation').value;
+    const permissions = getSelectedPermissions();
+    const scope = getSelectedScope();
 
     // Kiểm tra username đã tồn tại chưa (khi thêm mới hoặc sửa username)
     const existingUser = users.find(u => u.username === username && String(u.id) !== String(editingUserId));
@@ -180,7 +260,9 @@ async function handleSaveUser(e) {
             fullName,
             role,
             active,
-            station
+            station,
+            permissions,
+            scope
         };
 
         // Chỉ cập nhật password nếu có nhập mới
@@ -211,6 +293,8 @@ async function handleSaveUser(e) {
             role,
             active,
             station,
+            permissions,
+            scope,
             createdAt: new Date().toISOString()
         };
 

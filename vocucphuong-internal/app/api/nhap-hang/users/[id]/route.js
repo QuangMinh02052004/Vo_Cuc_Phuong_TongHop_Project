@@ -10,13 +10,19 @@ export const dynamic = 'force-dynamic';
 // PUT /api/nhap-hang/users/[id] - Cập nhật
 // DELETE /api/nhap-hang/users/[id] - Xóa
 
+async function ensurePermissionColumns() {
+  await queryNhapHang(`ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "permissions" JSONB`);
+  await queryNhapHang(`ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "scope" TEXT`);
+}
+
 // GET - Lấy chi tiết user
 export async function GET(request, { params }) {
   try {
+    await ensurePermissionColumns();
     const { id } = await params;
 
     const user = await queryOneNhapHang(`
-      SELECT id, username, "fullName", phone, role, station, active, "createdAt", "updatedAt"
+      SELECT id, username, "fullName", phone, role, station, permissions, scope, active, "createdAt", "updatedAt"
       FROM "Users"
       WHERE id = $1
     `, [id]);
@@ -48,6 +54,7 @@ export async function GET(request, { params }) {
 // PUT - Cập nhật user
 export async function PUT(request, { params }) {
   try {
+    await ensurePermissionColumns();
     const { id } = await params;
     const body = await request.json();
 
@@ -64,7 +71,7 @@ export async function PUT(request, { params }) {
       }, { status: 404 });
     }
 
-    const { username, password, fullName, phone, role, station, active } = body;
+    const { username, password, fullName, phone, role, station, active, permissions, scope } = body;
 
     // Build update query
     const updates = [];
@@ -106,6 +113,16 @@ export async function PUT(request, { params }) {
       values.push(active);
       paramIndex++;
     }
+    if (permissions !== undefined) {
+      updates.push(`permissions = $${paramIndex}::jsonb`);
+      values.push(JSON.stringify(Array.isArray(permissions) ? permissions : []));
+      paramIndex++;
+    }
+    if (scope !== undefined) {
+      updates.push(`scope = $${paramIndex}`);
+      values.push(scope === 'all_stations' ? 'all_stations' : 'own_station');
+      paramIndex++;
+    }
 
     if (updates.length === 0) {
       return NextResponse.json({
@@ -122,7 +139,7 @@ export async function PUT(request, { params }) {
       UPDATE "Users"
       SET ${updates.join(', ')}
       WHERE id = $${paramIndex}
-      RETURNING id, username, "fullName", phone, role, station, active, "createdAt", "updatedAt"
+      RETURNING id, username, "fullName", phone, role, station, permissions, scope, active, "createdAt", "updatedAt"
     `, values);
 
     return NextResponse.json({

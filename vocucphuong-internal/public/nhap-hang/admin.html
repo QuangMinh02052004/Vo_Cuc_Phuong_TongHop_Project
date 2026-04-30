@@ -7,7 +7,7 @@
     <title>Quản lý tài khoản - CTY DV XE DU LỊCH VÕ CÚC PHƯƠNG</title>
     <link rel="icon" type="image/png" href="images/logo.png">
     <link rel="stylesheet" href="css/styles.css?v=7.4">
-    <link rel="stylesheet" href="css/admin.css?v=2.0">
+    <link rel="stylesheet" href="css/admin.css?v=2.1">
     <script src="js/theme.js?v=1.0"></script>
 </head>
 
@@ -121,6 +121,50 @@
                     </select>
                 </div>
 
+                <div class="form-group perm-section">
+                    <label>Phạm vi dữ liệu</label>
+                    <div class="perm-radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="modalScope" value="own_station" checked>
+                            <span>Chỉ trạm của tài khoản</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="modalScope" value="all_stations">
+                            <span>Tất cả trạm (kho tổng)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group perm-section">
+                    <label>Quyền truy cập</label>
+                    <div class="perm-presets">
+                        <button type="button" class="btn btn-mini" data-preset="employee">Nhân viên trạm</button>
+                        <button type="button" class="btn btn-mini" data-preset="warehouse_manager">Quản lý kho tổng</button>
+                        <button type="button" class="btn btn-mini" data-preset="admin">Quản trị viên</button>
+                        <button type="button" class="btn btn-mini btn-mini-clear" data-preset="none">Bỏ chọn</button>
+                    </div>
+                    <div class="perm-grid" id="modalPermGrid">
+                        <div class="perm-group">
+                            <div class="perm-group-title">Phòng vé (đơn hàng)</div>
+                            <label class="checkbox-label"><input type="checkbox" data-perm="phongve.view"><span>Xem</span></label>
+                            <label class="checkbox-label"><input type="checkbox" data-perm="phongve.create"><span>Thêm đơn</span></label>
+                            <label class="checkbox-label"><input type="checkbox" data-perm="phongve.edit"><span>Sửa đơn</span></label>
+                            <label class="checkbox-label"><input type="checkbox" data-perm="phongve.cancel"><span>Hủy đơn</span></label>
+                        </div>
+                        <div class="perm-group">
+                            <div class="perm-group-title">Kho hàng</div>
+                            <label class="checkbox-label"><input type="checkbox" data-perm="kho.view"><span>Xem</span></label>
+                            <label class="checkbox-label"><input type="checkbox" data-perm="kho.edit"><span>Cập nhật thanh toán/giao</span></label>
+                        </div>
+                        <div class="perm-group">
+                            <div class="perm-group-title">Khác</div>
+                            <label class="checkbox-label"><input type="checkbox" data-perm="thongke.view"><span>Thống kê</span></label>
+                            <label class="checkbox-label"><input type="checkbox" data-perm="logs.view"><span>Lịch sử thao tác</span></label>
+                            <label class="checkbox-label"><input type="checkbox" data-perm="users.manage"><span>Quản lý tài khoản</span></label>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="form-group">
                     <label class="checkbox-label">
                         <input type="checkbox" id="modalActive" checked>
@@ -143,8 +187,8 @@
     </footer>
 
     <script src="js/modal.js?v=2.0"></script>
-    <script type="module" src="js/auth.js?v=3.0"></script>
-    <script type="module" src="js/admin.js?v=3.1"></script>
+    <script type="module" src="js/auth.js?v=5.0"></script>
+    <script type="module" src="js/admin.js?v=4.0"></script>
 </body>
 
 </html>

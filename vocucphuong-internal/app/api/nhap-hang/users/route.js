@@ -9,13 +9,19 @@ export const dynamic = 'force-dynamic';
 // GET /api/nhap-hang/users - Lấy tất cả users
 // POST /api/nhap-hang/users - Tạo user mới
 
+async function ensurePermissionColumns() {
+  await queryNhapHang(`ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "permissions" JSONB`);
+  await queryNhapHang(`ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "scope" TEXT`);
+}
+
 export async function GET(request) {
   try {
+    await ensurePermissionColumns();
     const { searchParams } = new URL(request.url);
     const activeOnly = searchParams.get('active') !== 'false';
 
     let query = `
-      SELECT id, username, "fullName", phone, role, station, active, "createdAt", "updatedAt"
+      SELECT id, username, "fullName", phone, role, station, permissions, scope, active, "createdAt", "updatedAt"
       FROM "Users"
     `;
     const params = [];
@@ -45,8 +51,9 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
+    await ensurePermissionColumns();
     const body = await request.json();
-    const { username, password, fullName, phone, role, station } = body;
+    const { username, password, fullName, phone, role, station, permissions, scope } = body;
 
     if (!username || !password || !fullName) {
       return NextResponse.json({
@@ -55,11 +62,14 @@ export async function POST(request) {
       }, { status: 400 });
     }
 
+    const permsJson = JSON.stringify(Array.isArray(permissions) ? permissions : []);
+    const scopeValue = scope === 'all_stations' ? 'all_stations' : 'own_station';
+
     const result = await queryOneNhapHang(`
-      INSERT INTO "Users" (username, password, "fullName", phone, role, station, active)
-      VALUES ($1, $2, $3, $4, $5, $6, true)
-      RETURNING id, username, "fullName", phone, role, station, active, "createdAt"
-    `, [username, password, fullName, phone || null, role || 'employee', station || null]);
+      INSERT INTO "Users" (username, password, "fullName", phone, role, station, permissions, scope, active)
+      VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8, true)
+      RETURNING id, username, "fullName", phone, role, station, permissions, scope, active, "createdAt"
+    `, [username, password, fullName, phone || null, role || 'employee', station || null, permsJson, scopeValue]);
 
     return NextResponse.json({
       success: true,

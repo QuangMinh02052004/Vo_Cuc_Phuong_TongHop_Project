@@ -18,6 +18,14 @@ function getCurrentUser() {
     return sessionUser ? JSON.parse(sessionUser) : (localUser ? JSON.parse(localUser) : null);
 }
 
+// Local hasPerm fallback nếu auth.js không load
+function hasPerm(p) {
+    const u = getCurrentUser();
+    if (!u) return false;
+    if (u.role === 'admin') return true;
+    return Array.isArray(u.permissions) && u.permissions.includes(p);
+}
+
 // Call API
 async function callAPI(endpoint, options = {}) {
     const token = getAuthToken();
@@ -385,13 +393,15 @@ document.addEventListener('DOMContentLoaded', async function() {
         document.getElementById('currentStationName').textContent = stationName;
     }
 
-    // Kiểm tra quyền admin - chỉ admin mới được xem
-    if (currentUser.role !== 'admin') {
+    // Kiểm tra quyền: admin HOẶC user có permission logs.view
+    const canView = currentUser.role === 'admin'
+        || (typeof hasPerm === 'function' && hasPerm('logs.view'));
+    if (!canView) {
         document.getElementById('adminWarning').style.display = 'block';
         document.querySelector('.management-section').innerHTML = `
             <div style="text-align: center; padding: 50px; color: #dc2626;">
                 <h2>Không có quyền truy cập</h2>
-                <p>Chỉ quản trị viên mới có thể xem trang này.</p>
+                <p>Bạn cần được cấp quyền "Lịch sử thao tác" để xem trang này.</p>
                 <a href="index.html" class="btn btn-primary" style="margin-top: 20px;">Quay lại trang chủ</a>
             </div>
         `;

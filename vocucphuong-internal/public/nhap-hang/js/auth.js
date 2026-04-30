@@ -50,6 +50,8 @@ async function handleLogin(e) {
             fullName: user.fullName || user.full_name,
             role: user.role,
             station: user.station || '', // Trạm của user
+            permissions: Array.isArray(user.permissions) ? user.permissions : [],
+            scope: user.scope || (user.role === 'admin' ? 'all_stations' : 'own_station'),
             token: result.token, // JWT token
             loginTime: new Date().toISOString()
         };
@@ -127,9 +129,54 @@ function updateUIWithUser(user) {
     }
 
     // Nếu là admin, hiển thị menu quản lý tài khoản
-    if (user.role === 'admin') {
+    if (user.role === 'admin' || hasPerm('users.manage')) {
         addAdminMenu();
     }
+
+    // Ẩn các mục nav user không có quyền
+    applyNavPermissions();
+}
+
+// Mapping nav -> permission
+const NAV_PERM_MAP = [
+    { href: 'index.html', perm: 'phongve.view' },
+    { href: 'warehouse.html', perm: 'kho.view' },
+    { href: 'statistics.html', perm: 'thongke.view' },
+    { href: 'logs.html', perm: 'logs.view' },
+    { href: 'admin.html', perm: 'users.manage' },
+];
+
+function applyNavPermissions() {
+    const navItems = document.querySelectorAll('.navbar .nav-item');
+    navItems.forEach(item => {
+        const href = item.getAttribute('href') || '';
+        const match = NAV_PERM_MAP.find(m => href.endsWith(m.href));
+        if (!match) return;
+        if (!hasPerm(match.perm)) {
+            item.style.display = 'none';
+        }
+    });
+}
+
+// Quyền: admin có tất cả; ngược lại check trong mảng permissions
+function hasPerm(perm) {
+    const u = getCurrentUser();
+    if (!u) return false;
+    if (u.role === 'admin') return true;
+    return Array.isArray(u.permissions) && u.permissions.includes(perm);
+}
+
+// scope: admin = all_stations; ngược lại theo cài đặt
+function getUserScope() {
+    const u = getCurrentUser();
+    if (!u) return 'own_station';
+    if (u.role === 'admin') return 'all_stations';
+    return u.scope === 'all_stations' ? 'all_stations' : 'own_station';
+}
+
+// Truy cập tất cả trạm (admin OR scope=all_stations)
+function hasGlobalStationAccess() {
+    return getUserScope() === 'all_stations';
 }
 
 // Thêm menu quản lý cho admin
@@ -155,3 +202,6 @@ function logout() {
 window.getCurrentUser = getCurrentUser;
 window.logout = logout;
 window.checkAuthentication = checkAuthentication;
+window.hasPerm = hasPerm;
+window.getUserScope = getUserScope;
+window.hasGlobalStationAccess = hasGlobalStationAccess;

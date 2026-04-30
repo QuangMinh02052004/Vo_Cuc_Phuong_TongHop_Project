@@ -843,7 +843,10 @@ function renderTable() {
             }
         }
 
-        // ✅ Admin có quyền xem TẤT CẢ đơn hàng từ mọi trạm (chỉ trong ngày)
+        // ✅ Admin/scope=all_stations có quyền xem TẤT CẢ đơn hàng từ mọi trạm (chỉ trong ngày)
+        if (typeof hasGlobalStationAccess === 'function' && hasGlobalStationAccess()) {
+            return true;
+        }
         if (currentUser && currentUser.role === 'admin') {
             return true;
         }
@@ -1031,16 +1034,19 @@ function updateStatistics(filteredProducts = null) {
     // Nếu không truyền vào, lấy products đã filter theo station
     if (!filteredProducts) {
         const currentUser = getCurrentUser();
+        const isGlobal = (typeof hasGlobalStationAccess === 'function' && hasGlobalStationAccess())
+            || (currentUser && currentUser.role === 'admin');
         filteredProducts = products.filter(product => {
+            // Chỉ tính hàng nhập hôm nay
+            if (!isToday(product.sendDate) && !isToday(product.createdAt)) {
+                return false;
+            }
+            if (isGlobal) return true;
             if (!currentUser || !currentUser.station) {
                 return true;
             }
             // Chỉ tính sản phẩm có senderStation được set VÀ bằng trạm hiện tại
             if (!product.senderStation) {
-                return false;
-            }
-            // Chỉ tính hàng nhập hôm nay
-            if (!isToday(product.sendDate) && !isToday(product.createdAt)) {
                 return false;
             }
             return product.senderStation === currentUser.station;

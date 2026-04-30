@@ -1,4 +1,4 @@
-import { queryOneNhapHang } from '../../../../../lib/database';
+import { queryNhapHang, queryOneNhapHang } from '../../../../../lib/database';
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -7,8 +7,18 @@ export const dynamic = 'force-dynamic';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'vocucphuong-secret-key-2024';
 
+async function ensurePermissionColumns() {
+  try {
+    await queryNhapHang(`ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "permissions" JSONB`);
+    await queryNhapHang(`ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "scope" TEXT`);
+  } catch (e) {
+    console.warn('[Login] permission columns migration:', e.message);
+  }
+}
+
 export async function POST(request) {
   try {
+    await ensurePermissionColumns();
     const { username, password } = await request.json();
 
     if (!username || !password) {
@@ -47,13 +57,25 @@ export async function POST(request) {
       }, { status: 401 });
     }
 
+    // Default permissions cho legacy user (chưa được set permissions)
+    const ADMIN_PERMS = ['phongve.view','phongve.create','phongve.edit','phongve.cancel','kho.view','kho.edit','thongke.view','logs.view','users.manage'];
+    const EMPLOYEE_PERMS = ['phongve.view','phongve.create','phongve.edit','kho.view','kho.edit','thongke.view'];
+
+    let permissions = Array.isArray(user.permissions) ? user.permissions : [];
+    if (permissions.length === 0) {
+      permissions = user.role === 'admin' ? ADMIN_PERMS : EMPLOYEE_PERMS;
+    }
+    const scope = user.scope || (user.role === 'admin' ? 'all_stations' : 'own_station');
+
     const token = jwt.sign(
       {
         id: user.id,
         username: user.username,
         role: user.role,
         station: user.station,
-        fullName: user.fullName
+        fullName: user.fullName,
+        permissions,
+        scope
       },
       JWT_SECRET,
       { expiresIn: '24h' }
@@ -68,7 +90,9 @@ export async function POST(request) {
         username: user.username,
         fullName: user.fullName,
         role: user.role,
-        station: user.station
+        station: user.station,
+        permissions,
+        scope
       }
     });
   } catch (error) {

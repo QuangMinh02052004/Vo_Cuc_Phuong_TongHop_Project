@@ -177,7 +177,10 @@ function renderWarehouseTable() {
             return false;
         }
 
-        // ✅ Admin có quyền xem TẤT CẢ đơn hàng từ mọi trạm (chỉ trong ngày)
+        // ✅ Admin/scope=all_stations có quyền xem TẤT CẢ đơn hàng từ mọi trạm (chỉ trong ngày)
+        if (typeof hasGlobalStationAccess === 'function' && hasGlobalStationAccess()) {
+            return true;
+        }
         if (currentUser && currentUser.role === 'admin') {
             return true;
         }
@@ -323,7 +326,10 @@ function renderWarehouseStatistics() {
             return false;
         }
 
-        // ✅ Admin thấy tất cả đơn hàng trong ngày
+        // ✅ Admin/scope=all_stations thấy tất cả đơn hàng trong ngày
+        if (typeof hasGlobalStationAccess === 'function' && hasGlobalStationAccess()) {
+            return true;
+        }
         if (currentUser && currentUser.role === 'admin') {
             return true;
         }
@@ -356,9 +362,10 @@ function renderWarehouseStatistics() {
     // Số đơn chưa giao/chưa thu
     const pendingCount = filteredProducts.filter(p => p.deliveryStatus !== 'delivered').length;
 
-    const isAdmin = currentUser && currentUser.role === 'admin';
-    const stationLabel = isAdmin ? 'Tất cả trạm' : currentUserStation;
-    const shipmentLabel = isAdmin ? `${totalShipments} đơn hàng hôm nay` : `${totalShipments} đơn hàng từ trạm khác`;
+    const isGlobal = (typeof hasGlobalStationAccess === 'function' && hasGlobalStationAccess())
+        || (currentUser && currentUser.role === 'admin');
+    const stationLabel = isGlobal ? 'Tất cả trạm' : currentUserStation;
+    const shipmentLabel = isGlobal ? `${totalShipments} đơn hàng hôm nay` : `${totalShipments} đơn hàng từ trạm khác`;
 
     statsElement.innerHTML = `
         <div class="stats-summary">
