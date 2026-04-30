@@ -1,15 +1,15 @@
 {
   "files": {
     "main.css": "/tong-hop/static/css/main.ca404e34.css",
-    "main.js": "/tong-hop/static/js/main.8cbd7b2f.js",
+    "main.js": "/tong-hop/static/js/main.e3a588bc.js",
     "static/js/453.df7375e7.chunk.js": "/tong-hop/static/js/453.df7375e7.chunk.js",
     "index.html": "/tong-hop/index.html",
     "main.ca404e34.css.map": "/tong-hop/static/css/main.ca404e34.css.map",
-    "main.8cbd7b2f.js.map": "/tong-hop/static/js/main.8cbd7b2f.js.map",
+    "main.e3a588bc.js.map": "/tong-hop/static/js/main.e3a588bc.js.map",
     "453.df7375e7.chunk.js.map": "/tong-hop/static/js/453.df7375e7.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.ca404e34.css",
-    "static/js/main.8cbd7b2f.js"
+    "static/js/main.e3a588bc.js"
   ]
 }
