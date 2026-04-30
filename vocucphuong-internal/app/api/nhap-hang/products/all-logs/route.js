@@ -1,10 +1,13 @@
 import { NextResponse } from 'next/server';
 import { query } from '../../../../../lib/database';
+import { requirePerm } from '../../../../../lib/auth-helper';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request) {
   try {
+    const gate = requirePerm(request, 'logs.view');
+    if (gate.response) return gate.response;
     const { searchParams } = new URL(request.url);
 
     const dateFrom = searchParams.get('dateFrom');

@@ -1,4 +1,5 @@
 import { queryNhapHang, queryOneNhapHang } from '../../../../../lib/database';
+import { requirePerm } from '../../../../../lib/auth-helper';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -18,6 +19,8 @@ async function ensurePermissionColumns() {
 // GET - Lấy chi tiết user
 export async function GET(request, { params }) {
   try {
+    const gate = requirePerm(request, 'users.manage');
+    if (gate.response) return gate.response;
     await ensurePermissionColumns();
     const { id } = await params;
 
@@ -54,6 +57,8 @@ export async function GET(request, { params }) {
 // PUT - Cập nhật user
 export async function PUT(request, { params }) {
   try {
+    const gate = requirePerm(request, 'users.manage');
+    if (gate.response) return gate.response;
     await ensurePermissionColumns();
     const { id } = await params;
     const body = await request.json();
@@ -171,6 +176,8 @@ export async function PUT(request, { params }) {
 // DELETE - Xóa user
 export async function DELETE(request, { params }) {
   try {
+    const gate = requirePerm(request, 'users.manage');
+    if (gate.response) return gate.response;
     const { id } = await params;
 
     // Check if user exists

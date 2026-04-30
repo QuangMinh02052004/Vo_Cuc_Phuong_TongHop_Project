@@ -1,5 +1,6 @@
 import { queryNhapHang, queryOneNhapHang, queryTongHop, queryOneTongHop } from '../../../../lib/database';
 import { extractAddressFromName, extractNameOnly } from '../../../../lib/stations';
+import { softCheckPerm, hasGlobalScope } from '../../../../lib/auth-helper';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -478,6 +479,7 @@ async function createTongHopBooking(product) {
 
 export async function GET(request) {
   try {
+    const user = softCheckPerm(request, 'phongve.view', 'GET /products');
     const { searchParams } = new URL(request.url);
     const date = searchParams.get('date'); // Format: YYYY-MM-DD
     const station = searchParams.get('station');
@@ -602,6 +604,7 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
+    softCheckPerm(request, 'phongve.create', 'POST /products');
     const body = await request.json();
     const {
       id: providedId,

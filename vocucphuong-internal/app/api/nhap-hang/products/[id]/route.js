@@ -1,4 +1,5 @@
 import { queryNhapHang, queryOneNhapHang, queryTongHop } from '../../../../../lib/database';
+import { softCheckPerm } from '../../../../../lib/auth-helper';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -60,6 +61,7 @@ async function logProductChange(productId, action, field, oldValue, newValue, ch
 // GET - Lấy chi tiết đơn hàng
 export async function GET(request, { params }) {
   try {
+    softCheckPerm(request, 'phongve.view', 'GET /products/[id]');
     const { id } = await params;
 
     const product = await queryOneNhapHang(`
@@ -105,6 +107,7 @@ export async function GET(request, { params }) {
 // PUT - Cập nhật đơn hàng
 export async function PUT(request, { params }) {
   try {
+    softCheckPerm(request, 'phongve.edit', 'PUT /products/[id]');
     const { id } = await params;
     const body = await request.json();
     const clientIP = getClientIP(request);
@@ -227,6 +230,7 @@ export async function PUT(request, { params }) {
 // DELETE - Hủy đơn hàng (soft delete: đánh dấu status = 'cancelled')
 export async function DELETE(request, { params }) {
   try {
+    softCheckPerm(request, 'phongve.cancel', 'DELETE /products/[id]');
     const { id } = await params;
     const clientIP = getClientIP(request);
     const { searchParams } = new URL(request.url);

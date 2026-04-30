@@ -40,14 +40,15 @@ export async function POST(request) {
       }, { status: 401 });
     }
 
-    // So sánh password: hỗ trợ cả bcrypt hash và plain text (tạm thời)
+    // So sánh password: hỗ trợ cả bcrypt hash và plain text (legacy)
     let isMatch = false;
+    let wasPlainText = false;
     if (user.password.startsWith('$2')) {
-      // Password đã được hash bằng bcrypt
       isMatch = await bcrypt.compare(password, user.password);
     } else {
-      // Plain text password (legacy) - so sánh trực tiếp
+      // Plain text password (legacy)
       isMatch = (user.password === password);
+      wasPlainText = isMatch;
     }
 
     if (!isMatch) {
@@ -55,6 +56,17 @@ export async function POST(request) {
         success: false,
         message: 'Mật khẩu không chính xác!'
       }, { status: 401 });
+    }
+
+    // Opportunistic upgrade: nếu login plain-text thành công → hash và update DB
+    if (wasPlainText) {
+      try {
+        const hashed = await bcrypt.hash(password, 10);
+        await queryNhapHang('UPDATE "Users" SET password = $1 WHERE id = $2', [hashed, user.id]);
+        console.log(`[Login] Rehashed plain password for user ${user.username}`);
+      } catch (e) {
+        console.warn('[Login] Rehash failed:', e.message);
+      }
     }
 
     // Default permissions cho legacy user (chưa được set permissions)

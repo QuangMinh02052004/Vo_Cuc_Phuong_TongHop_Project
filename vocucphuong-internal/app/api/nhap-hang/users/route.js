@@ -1,4 +1,5 @@
 import { queryNhapHang, queryOneNhapHang } from '../../../../lib/database';
+import { requirePerm } from '../../../../lib/auth-helper';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -16,6 +17,9 @@ async function ensurePermissionColumns() {
 
 export async function GET(request) {
   try {
+    const gate = requirePerm(request, 'users.manage');
+    if (gate.response) return gate.response;
+
     await ensurePermissionColumns();
     const { searchParams } = new URL(request.url);
     const activeOnly = searchParams.get('active') !== 'false';
@@ -51,6 +55,9 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
+    const gate = requirePerm(request, 'users.manage');
+    if (gate.response) return gate.response;
+
     await ensurePermissionColumns();
     const body = await request.json();
     const { username, password, fullName, phone, role, station, permissions, scope } = body;

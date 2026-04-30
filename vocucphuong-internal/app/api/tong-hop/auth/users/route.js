@@ -1,4 +1,5 @@
 import { queryTongHop, queryOneTongHop } from '../../../../../lib/database';
+import { requirePerm } from '../../../../../lib/auth-helper';
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 
@@ -10,10 +11,17 @@ export const dynamic = 'force-dynamic';
 // GET /api/tong-hop/auth/users - Lấy danh sách users
 // POST /api/tong-hop/auth/users - Tạo user mới (register)
 
+async function ensureTongHopPermColumns() {
+  await queryTongHop(`ALTER TABLE "TH_Users" ADD COLUMN IF NOT EXISTS "permissions" JSONB`);
+}
+
 export async function GET(request) {
   try {
+    const gate = requirePerm(request, 'users.manage');
+    if (gate.response) return gate.response;
+    await ensureTongHopPermColumns();
     const users = await queryTongHop(`
-      SELECT id, username, "fullName", email, phone, role, active as "isActive", "createdAt"
+      SELECT id, username, "fullName", email, phone, role, permissions, active as "isActive", "createdAt"
       FROM "TH_Users"
       ORDER BY id ASC
     `);
@@ -31,8 +39,11 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
+    const gate = requirePerm(request, 'users.manage');
+    if (gate.response) return gate.response;
+    await ensureTongHopPermColumns();
     const body = await request.json();
-    const { username, password, fullName, email, phone, role } = body;
+    const { username, password, fullName, email, phone, role, permissions } = body;
 
     if (!username || !password || !fullName) {
       return NextResponse.json({
@@ -56,13 +67,14 @@ export async function POST(request) {
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
+    const permsJson = JSON.stringify(Array.isArray(permissions) ? permissions : []);
 
     // Create user
     const result = await queryOneTongHop(`
-      INSERT INTO "TH_Users" (username, password, "fullName", email, phone, role, active)
-      VALUES ($1, $2, $3, $4, $5, $6, true)
-      RETURNING id, username, "fullName", email, phone, role, active as "isActive"
-    `, [username, hashedPassword, fullName, email || null, phone || null, role || 'user']);
+      INSERT INTO "TH_Users" (username, password, "fullName", email, phone, role, permissions, active)
+      VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, true)
+      RETURNING id, username, "fullName", email, phone, role, permissions, active as "isActive"
+    `, [username, hashedPassword, fullName, email || null, phone || null, role || 'user', permsJson]);
 
     return NextResponse.json({
       success: true,

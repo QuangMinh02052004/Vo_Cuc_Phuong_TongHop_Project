@@ -1,4 +1,5 @@
 import { queryTongHop, queryOneTongHop } from '../../../../../../lib/database';
+import { requirePerm } from '../../../../../../lib/auth-helper';
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 
@@ -11,12 +12,19 @@ export const dynamic = 'force-dynamic';
 // PUT /api/tong-hop/auth/users/[id] - Cập nhật user
 // DELETE /api/tong-hop/auth/users/[id] - Xóa user
 
+async function ensureTongHopPermColumns() {
+  await queryTongHop(`ALTER TABLE "TH_Users" ADD COLUMN IF NOT EXISTS "permissions" JSONB`);
+}
+
 export async function GET(request, { params }) {
   try {
+    const gate = requirePerm(request, 'users.manage');
+    if (gate.response) return gate.response;
+    await ensureTongHopPermColumns();
     const { id } = await params;
 
     const user = await queryOneTongHop(`
-      SELECT id, username, "fullName", email, phone, role, active as "isActive", "createdAt"
+      SELECT id, username, "fullName", email, phone, role, permissions, active as "isActive", "createdAt"
       FROM "TH_Users"
       WHERE id = $1
     `, [id]);
@@ -41,9 +49,12 @@ export async function GET(request, { params }) {
 
 export async function PUT(request, { params }) {
   try {
+    const gate = requirePerm(request, 'users.manage');
+    if (gate.response) return gate.response;
+    await ensureTongHopPermColumns();
     const { id } = await params;
     const body = await request.json();
-    const { fullName, email, phone, role, isActive, password } = body;
+    const { fullName, email, phone, role, isActive, password, permissions } = body;
 
     // Check if user exists
     const existing = await queryOneTongHop(
@@ -58,25 +69,24 @@ export async function PUT(request, { params }) {
       }, { status: 404 });
     }
 
+    const permsJson = JSON.stringify(Array.isArray(permissions) ? permissions : []);
+
     // Build update query
     let updateQuery = `
       UPDATE "TH_Users"
-      SET "fullName" = $1, email = $2, phone = $3, role = $4, active = $5
+      SET "fullName" = $1, email = $2, phone = $3, role = $4, active = $5, permissions = $6::jsonb
     `;
-    let updateParams = [fullName, email || null, phone || null, role || 'user', isActive !== false];
+    let updateParams = [fullName, email || null, phone || null, role || 'user', isActive !== false, permsJson];
 
     // If password is provided, update it
     if (password) {
       const hashedPassword = await bcrypt.hash(password, 10);
-      updateQuery = `
-        UPDATE "TH_Users"
-        SET "fullName" = $1, email = $2, phone = $3, role = $4, active = $5, password = $6
-      `;
+      updateQuery += `, password = $7`;
       updateParams.push(hashedPassword);
     }
 
     const paramIndex = updateParams.length + 1;
-    updateQuery += ` WHERE id = $${paramIndex} RETURNING id, username, "fullName", email, phone, role, active as "isActive"`;
+    updateQuery += ` WHERE id = $${paramIndex} RETURNING id, username, "fullName", email, phone, role, permissions, active as "isActive"`;
     updateParams.push(id);
 
     const result = await queryOneTongHop(updateQuery, updateParams);
@@ -98,6 +108,8 @@ export async function PUT(request, { params }) {
 
 export async function DELETE(request, { params }) {
   try {
+    const gate = requirePerm(request, 'users.manage');
+    if (gate.response) return gate.response;
     const { id } = await params;
 
     // Check if user exists
