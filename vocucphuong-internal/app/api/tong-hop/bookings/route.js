@@ -79,6 +79,22 @@ export async function POST(request) {
       note || '', seatNumber || 0, amount || 0, paid || 0, timeSlot || '', date || '', route || ''
     ]);
 
+    // Best-effort upsert vào TH_Customers (không fail booking nếu lỗi)
+    if (phone && phone.length >= 9) {
+      queryTongHop(`
+        INSERT INTO "TH_Customers" (phone, "fullName", "pickupType", "pickupLocation", "dropoffType", "dropoffLocation", notes, "updatedAt")
+        VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+        ON CONFLICT (phone) DO UPDATE SET
+          "fullName" = COALESCE(NULLIF(EXCLUDED."fullName", ''), "TH_Customers"."fullName"),
+          "pickupType" = COALESCE(NULLIF(EXCLUDED."pickupType", ''), "TH_Customers"."pickupType"),
+          "pickupLocation" = COALESCE(NULLIF(EXCLUDED."pickupLocation", ''), "TH_Customers"."pickupLocation"),
+          "dropoffType" = COALESCE(NULLIF(EXCLUDED."dropoffType", ''), "TH_Customers"."dropoffType"),
+          "dropoffLocation" = COALESCE(NULLIF(EXCLUDED."dropoffLocation", ''), "TH_Customers"."dropoffLocation"),
+          notes = COALESCE(NULLIF(EXCLUDED.notes, ''), "TH_Customers".notes),
+          "updatedAt" = NOW()
+      `, [phone, name || '', pickupMethod || '', pickupAddress || '', dropoffMethod || '', dropoffAddress || '', note || '']).catch(() => {});
+    }
+
     return NextResponse.json(result[0], { status: 201 });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

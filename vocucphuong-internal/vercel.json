@@ -1,4 +1,10 @@
 {
   "buildCommand": "npm run build",
-  "outputDirectory": ".next"
+  "outputDirectory": ".next",
+  "crons": [
+    {
+      "path": "/api/tong-hop/reports/cron-daily",
+      "schedule": "30 16 * * *"
+    }
+  ]
 }
