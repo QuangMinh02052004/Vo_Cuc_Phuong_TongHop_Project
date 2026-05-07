@@ -100,12 +100,6 @@ export default function Home() {
         }}>
           Quản lý doanh thu
         </Link>
-        <Link href="/admin/partners" style={{
-          padding: '10px 22px', fontSize: '13px', fontWeight: 600, color: '#475569',
-          background: '#fff', border: '1px solid #cbd5e1', borderRadius: '8px', textDecoration: 'none',
-        }}>
-          Đối tác (API)
-        </Link>
       </div>
 
       <p style={{ marginTop: '36px', fontSize: '11px', color: '#94a3b8' }}>
