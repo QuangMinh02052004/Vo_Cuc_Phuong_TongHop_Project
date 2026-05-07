@@ -104,6 +104,11 @@ export async function GET(request) {
     const { startDate, endDate } = getDateRange(period, dateParam);
     const { startDate: prevStartDate, endDate: prevEndDate } = getPreviousDateRange(period, dateParam);
 
+    // Đảm bảo cột clientReqId tồn tại (filter dưới đây phụ thuộc vào nó)
+    try {
+      await queryTongHop(`ALTER TABLE "TH_Bookings" ADD COLUMN IF NOT EXISTS "clientReqId" TEXT`);
+    } catch (_) { /* ignore */ }
+
     // =====================
     // 1. THỐNG KÊ NHẬP HÀNG (KỲ HIỆN TẠI)
     // =====================
@@ -175,8 +180,17 @@ export async function GET(request) {
     let tongHopByRoute = [];
     let tongHopByDate = [];
 
+    // Loại trừ booking đến từ webhook (DatVe + NhapHang) khỏi bucket TongHop
+    // để tránh double-count: DatVe đã tính trong bucket DatVe; NhapHang đã tính trong Products
+    //  - clientReqId IS NOT NULL  → đến từ webhook NhapHang (chỉ webhook này set clientReqId)
+    //  - pickupMethod = 'Website' → đến từ webhook DatVe (form thủ công không có option này)
+    const tongHopOnlyFilter = `
+      AND ("clientReqId" IS NULL)
+      AND ("pickupMethod" IS NULL OR "pickupMethod" <> 'Website')
+    `;
+
     if (dates.length > 0) {
-      // Tổng quan
+      // Tổng quan (chỉ TongHop offline thuần — không có booking đến từ DatVe/NhapHang)
       const tongHopResult = await queryTongHop(`
         SELECT
           COUNT(*) as "totalBookings",
@@ -185,6 +199,7 @@ export async function GET(request) {
           COALESCE(SUM(paid), 0) as "paidAmount"
         FROM "TH_Bookings"
         WHERE date = ANY($1::text[])
+        ${tongHopOnlyFilter}
       `, [dates]);
 
       if (tongHopResult[0]) {
@@ -199,6 +214,7 @@ export async function GET(request) {
           COALESCE(SUM(amount), 0) as revenue
         FROM "TH_Bookings"
         WHERE date = ANY($1::text[])
+        ${tongHopOnlyFilter}
         GROUP BY route
         ORDER BY revenue DESC
       `, [dates]);
@@ -211,6 +227,7 @@ export async function GET(request) {
           COALESCE(SUM(amount), 0) as revenue
         FROM "TH_Bookings"
         WHERE date = ANY($1::text[])
+        ${tongHopOnlyFilter}
         GROUP BY date
         ORDER BY date ASC
       `, [dates]);
@@ -235,6 +252,7 @@ export async function GET(request) {
           COALESCE(SUM(amount), 0) as "totalRevenue"
         FROM "TH_Bookings"
         WHERE date = ANY($1::text[])
+        ${tongHopOnlyFilter}
       `, [prevDates]);
 
       if (tongHopPrevResult[0]) {
