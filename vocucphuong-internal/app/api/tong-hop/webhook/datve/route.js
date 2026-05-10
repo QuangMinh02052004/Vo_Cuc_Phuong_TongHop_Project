@@ -165,7 +165,8 @@ export async function POST(request) {
       seats = 1,
       totalPrice = 0,
       route: routeStr,
-      notes
+      notes,
+      selectedSeats, // optional: [3, 5] — nếu khách chọn ghế cụ thể trên DatVe
     } = body;
 
     // Validate required fields
@@ -190,11 +191,21 @@ export async function POST(request) {
     // Tạo booking cho mỗi ghế
     const createdBookings = [];
 
-    for (let i = 0; i < seats; i++) {
-      // Tìm ghế trống
-      const seatNumber = await findNextAvailableSeat(timeSlot.id, formattedDate, route);
+    // Nếu khách chọn ghế cụ thể (từ SeatPicker), dùng đúng ghế đó.
+    // Nếu không có (booking cũ / chưa pick), fallback auto-find.
+    const useExplicitSeats = Array.isArray(selectedSeats) && selectedSeats.length > 0;
+    const targetSeats = useExplicitSeats
+      ? selectedSeats.slice(0, seats).map(Number).filter(Boolean)
+      : [];
 
-      if (seatNumber === 0) {
+    const seatCount = useExplicitSeats ? targetSeats.length : seats;
+
+    for (let i = 0; i < seatCount; i++) {
+      const seatNumber = useExplicitSeats
+        ? targetSeats[i]
+        : await findNextAvailableSeat(timeSlot.id, formattedDate, route);
+
+      if (!seatNumber || seatNumber === 0) {
         console.log('[Webhook DatVe] Hết ghế trống cho booking:', bookingCode);
         break;
       }
@@ -227,6 +238,20 @@ export async function POST(request) {
       ]);
 
       createdBookings.push(result[0]);
+    }
+
+    // Sau khi tạo booking thành công, xóa seat-locks tương ứng (đã thành booking thật rồi)
+    if (createdBookings.length > 0) {
+      const bookedSeatNumbers = createdBookings.map(b => b.seatNumber);
+      try {
+        await queryTongHop(
+          `DELETE FROM "TH_SeatLocks"
+           WHERE "timeSlotId" = $1 AND date = $2 AND route = $3 AND "seatNumber" = ANY($4::int[])`,
+          [timeSlot.id, formattedDate, route, bookedSeatNumbers]
+        );
+      } catch (e) {
+        console.error('[Webhook DatVe] Lỗi xóa seat-locks:', e.message);
+      }
     }
 
     console.log(`[Webhook DatVe] Created ${createdBookings.length} booking(s) for ${bookingCode}`);
