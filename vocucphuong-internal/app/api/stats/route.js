@@ -181,13 +181,10 @@ export async function GET(request) {
     let tongHopByDate = [];
 
     // Loại trừ booking đến từ webhook (DatVe + NhapHang) khỏi bucket TongHop
-    // để tránh double-count: DatVe đã tính trong bucket DatVe; NhapHang đã tính trong Products
-    //  - clientReqId IS NOT NULL  → đến từ webhook NhapHang (chỉ webhook này set clientReqId)
-    //  - pickupMethod = 'Website' → đến từ webhook DatVe (form thủ công không có option này)
-    const tongHopOnlyFilter = `
-      AND ("clientReqId" IS NULL)
-      AND ("pickupMethod" IS NULL OR "pickupMethod" <> 'Website')
-    `;
+    // để tránh double-count: cả 2 webhook đều set clientReqId
+    //  - NhapHang: clientReqId = "<productId>#<seat>"
+    //  - DatVe:    clientReqId = "datve#<bookingCode>#<seat>"
+    const tongHopOnlyFilter = `AND ("clientReqId" IS NULL)`;
 
     if (dates.length > 0) {
       // Tổng quan (chỉ TongHop offline thuần — không có booking đến từ DatVe/NhapHang)

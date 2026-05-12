@@ -167,6 +167,8 @@ export async function POST(request) {
       route: routeStr,
       notes,
       selectedSeats, // optional: [3, 5] — nếu khách chọn ghế cụ thể trên DatVe
+      pickupMethod,   // 'Tại bến' | 'Dọc đường'
+      pickupAddress,  // vd. "07 - Bưu điện Trảng Bom" khi dọc đường
     } = body;
 
     // Validate required fields
@@ -210,13 +212,18 @@ export async function POST(request) {
         break;
       }
 
+      // Đảm bảo cột clientReqId tồn tại (để đánh dấu booking đến từ webhook DatVe)
+      await queryTongHop(`ALTER TABLE "TH_Bookings" ADD COLUMN IF NOT EXISTS "clientReqId" TEXT`);
+      const reqId = bookingCode ? `datve#${bookingCode}#${seatNumber}` : null;
+
       const result = await queryTongHop(`
         INSERT INTO "TH_Bookings" (
           "timeSlotId", phone, name, gender, nationality,
           "pickupMethod", "pickupAddress", "dropoffMethod", "dropoffAddress",
-          note, "seatNumber", amount, paid, "timeSlot", date, route
+          note, "seatNumber", amount, paid, "timeSlot", date, route, "clientReqId"
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+        ON CONFLICT ("clientReqId") DO NOTHING
         RETURNING *
       `, [
         timeSlot.id,
@@ -224,8 +231,8 @@ export async function POST(request) {
         customerName,
         '', // gender
         '', // nationality
-        'Website', // pickupMethod
-        '', // pickupAddress
+        pickupMethod || 'Tại bến',           // pickupMethod thực
+        pickupMethod === 'Dọc đường' ? (pickupAddress || '') : '',
         'Bến xe', // dropoffMethod
         '', // dropoffAddress
         `[DatVe: ${bookingCode}] ${notes || ''}`.trim(),
@@ -234,10 +241,11 @@ export async function POST(request) {
         0, // paid
         departureTime || timeSlot.time,
         formattedDate,
-        route
+        route,
+        reqId,
       ]);
 
-      createdBookings.push(result[0]);
+      if (result.length > 0) createdBookings.push(result[0]);
     }
 
     // Sau khi tạo booking thành công, xóa seat-locks tương ứng (đã thành booking thật rồi)
