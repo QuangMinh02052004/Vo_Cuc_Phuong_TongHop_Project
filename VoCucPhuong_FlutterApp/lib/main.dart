@@ -3,12 +3,14 @@ import 'package:flutter/services.dart';
 
 // Conditional imports
 import 'webview_mobile.dart' if (dart.library.html) 'webview_web.dart' as webview;
+import 'session.dart';
+import 'login_screen.dart';
 
-// Cấu hình URL - Thay đổi IP_ADDRESS thành IP máy tính của bạn
-const String IP_ADDRESS = '10.150.150.1';
-const String URL_DAT_VE = 'http://$IP_ADDRESS:3000';
-const String URL_NHAP_HANG = 'http://$IP_ADDRESS:5001';
-const String URL_QUAN_LY_XE = 'http://$IP_ADDRESS:3001';
+// Production URLs trên Vercel
+// Trỏ thẳng vào index.html để Vercel không strip trailing slash → relative CSS/JS path resolve đúng
+const String URL_DAT_VE = 'https://vocucphuong.vercel.app';
+const String URL_NHAP_HANG = 'https://vocucphuongmanage.vercel.app/nhap-hang/index.html';
+const String URL_QUAN_LY_XE = 'https://vocucphuongmanage.vercel.app/tong-hop/index.html';
 
 // Brand Colors
 class AppColors {
@@ -90,14 +92,24 @@ class _SplashScreenState extends State<SplashScreen>
 
     _controller.forward();
 
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const MainScreen()),
-        );
-      }
-    });
+    _boot();
+  }
+
+  Future<void> _boot() async {
+    await Session.load();
+    await Future.delayed(const Duration(milliseconds: 1500));
+    if (!mounted) return;
+    if (Session.role == null) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => LoginScreen(onDoneBuilder: () => const MainScreen())),
+      );
+    } else {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const MainScreen()),
+      );
+    }
   }
 
   @override
@@ -201,35 +213,43 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
-  final List<NavItem> _navItems = [
-    NavItem(
-      title: 'Đặt Vé',
-      icon: Icons.confirmation_number_outlined,
-      activeIcon: Icons.confirmation_number,
-      color: AppColors.primary,
-      lightColor: const Color(0xFFE0F2FE),
-      url: URL_DAT_VE,
-      appBarTitle: 'Đặt Vé Xe Khách',
-    ),
-    NavItem(
-      title: 'Nhập Hàng',
-      icon: Icons.inventory_2_outlined,
-      activeIcon: Icons.inventory_2,
-      color: AppColors.accent,
-      lightColor: const Color(0xFFDCFCE7),
-      url: URL_NHAP_HANG,
-      appBarTitle: 'Quản Lý Hàng Hóa',
-    ),
-    NavItem(
-      title: 'Tổng Hợp',
-      icon: Icons.directions_bus_outlined,
-      activeIcon: Icons.directions_bus,
-      color: AppColors.orange,
-      lightColor: const Color(0xFFFEF3C7),
-      url: URL_QUAN_LY_XE,
-      appBarTitle: 'Quản Lý Xe Khách',
-    ),
-  ];
+  late final List<NavItem> _navItems = _buildNavItems();
+
+  List<NavItem> _buildNavItems() {
+    final all = [
+      NavItem(
+        title: 'Đặt Vé',
+        icon: Icons.confirmation_number_outlined,
+        activeIcon: Icons.confirmation_number,
+        color: AppColors.primary,
+        lightColor: const Color(0xFFE0F2FE),
+        url: URL_DAT_VE,
+        appBarTitle: 'Đặt Vé Xe Khách',
+      ),
+      NavItem(
+        title: 'Nhập Hàng',
+        icon: Icons.inventory_2_outlined,
+        activeIcon: Icons.inventory_2,
+        color: AppColors.accent,
+        lightColor: const Color(0xFFDCFCE7),
+        url: URL_NHAP_HANG,
+        appBarTitle: 'Quản Lý Hàng Hóa',
+      ),
+      NavItem(
+        title: 'Tổng Hợp',
+        icon: Icons.directions_bus_outlined,
+        activeIcon: Icons.directions_bus,
+        color: AppColors.orange,
+        lightColor: const Color(0xFFFEF3C7),
+        url: URL_QUAN_LY_XE,
+        appBarTitle: 'Quản Lý Xe Khách',
+      ),
+    ];
+    // Khách hàng chỉ thấy tab Đặt Vé
+    if (Session.isCustomer) return [all[0]];
+    return all;
+  }
+
 
   void _onNavTap(int index) {
     setState(() {
@@ -412,6 +432,58 @@ class WebViewScreen extends StatelessWidget {
         ),
         backgroundColor: color,
         elevation: 0,
+        actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.account_circle, color: Colors.white),
+            onSelected: (v) async {
+              if (v == 'logout') {
+                final ctx = context;
+                final confirmed = await showDialog<bool>(
+                  context: ctx,
+                  builder: (c) => AlertDialog(
+                    title: const Text('Đăng xuất?'),
+                    content: Text(Session.isCustomer
+                        ? 'Quay lại màn đăng nhập?'
+                        : 'Đăng xuất khỏi tài khoản ${Session.username ?? ""}?'),
+                    actions: [
+                      TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Hủy')),
+                      ElevatedButton(onPressed: () => Navigator.pop(c, true), child: const Text('Đăng xuất')),
+                    ],
+                  ),
+                );
+                if (confirmed == true) {
+                  await Session.logout();
+                  if (!ctx.mounted) return;
+                  Navigator.pushAndRemoveUntil(
+                    ctx,
+                    MaterialPageRoute(builder: (_) => LoginScreen(onDoneBuilder: () => const MainScreen())),
+                    (route) => false,
+                  );
+                }
+              }
+            },
+            itemBuilder: (_) => [
+              PopupMenuItem(
+                enabled: false,
+                child: Text(
+                  Session.isCustomer
+                      ? 'Khách (chưa đăng nhập)'
+                      : '${Session.fullName ?? Session.username ?? ""} (${Session.role ?? "staff"})',
+                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
+                ),
+              ),
+              const PopupMenuDivider(),
+              const PopupMenuItem(
+                value: 'logout',
+                child: Row(children: [
+                  Icon(Icons.logout, size: 18),
+                  SizedBox(width: 8),
+                  Text('Đăng xuất'),
+                ]),
+              ),
+            ],
+          ),
+        ],
         flexibleSpace: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(

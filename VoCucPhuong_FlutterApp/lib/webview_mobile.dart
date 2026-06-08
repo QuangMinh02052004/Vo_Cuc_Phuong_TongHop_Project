@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart' as wv;
+import 'package:webview_flutter_android/webview_flutter_android.dart' as wva;
+import 'package:webview_flutter_platform_interface/webview_flutter_platform_interface.dart' as wvi;
+import 'package:permission_handler/permission_handler.dart';
 
 class WebViewWidget extends StatefulWidget {
   final String url;
@@ -39,7 +42,8 @@ class _WebViewWidgetState extends State<WebViewWidget>
     _controller = wv.WebViewController()
       ..setJavaScriptMode(wv.JavaScriptMode.unrestricted)
       ..setBackgroundColor(Colors.white)
-      ..enableZoom(true)
+      ..setUserAgent('Mozilla/5.0 (Linux; Android 13; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36 VCP/1.1')
+      ..enableZoom(false)
       ..setNavigationDelegate(
         wv.NavigationDelegate(
           onPageStarted: (String url) {
@@ -83,6 +87,33 @@ class _WebViewWidgetState extends State<WebViewWidget>
         ),
       )
       ..loadRequest(Uri.parse(widget.url));
+
+    // Cấp quyền cho WebView khi web yêu cầu camera/microphone/location
+    if (_controller.platform is wva.AndroidWebViewController) {
+      final androidCtl = _controller.platform as wva.AndroidWebViewController;
+      androidCtl.setOnPlatformPermissionRequest((wvi.PlatformWebViewPermissionRequest request) async {
+        bool allGranted = true;
+        for (final type in request.types) {
+          if (type == wvi.WebViewPermissionResourceType.camera) {
+            if (!(await Permission.camera.request()).isGranted) allGranted = false;
+          } else if (type == wvi.WebViewPermissionResourceType.microphone) {
+            if (!(await Permission.microphone.request()).isGranted) allGranted = false;
+          }
+        }
+        if (allGranted) {
+          await request.grant();
+        } else {
+          await request.deny();
+        }
+      });
+      androidCtl.setGeolocationPermissionsPromptCallbacks(
+        onShowPrompt: (request) async {
+          final loc = await Permission.location.request();
+          return wva.GeolocationPermissionsResponse(allow: loc.isGranted, retain: true);
+        },
+        onHidePrompt: () {},
+      );
+    }
   }
 
   Future<void> _updateNavigationState() async {

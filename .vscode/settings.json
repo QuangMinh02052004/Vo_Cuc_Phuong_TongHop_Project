@@ -1,0 +1,19 @@
+{
+  "files.exclude": {
+    "**/.claude": true,
+    "**/.DS_Store": true,
+    "**/.vercel": true,
+    "**/.next": true,
+    "**/.dart_tool": true,
+    "**/.gradle": true,
+    "**/.idea": true,
+    "**/build": true,
+    "**/.flutter-plugins-dependencies": true
+  },
+  "search.exclude": {
+    "**/.claude": true,
+    "**/build": true,
+    "**/.next": true,
+    "**/node_modules": true
+  }
+}

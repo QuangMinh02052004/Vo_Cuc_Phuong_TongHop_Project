@@ -1,0 +1,14 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "crons": [
+    {
+      "path": "/api/tong-hop/reports/cron-daily",
+      "schedule": "30 16 * * *"
+    },
+    {
+      "path": "/api/nhap-hang/reconcile-doc-duong?since=4320",
+      "schedule": "0 1 * * *"
+    }
+  ]
+}
