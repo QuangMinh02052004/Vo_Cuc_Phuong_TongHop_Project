@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         O2BSoft → NhapHang Sync
 // @namespace    vocucphuong.local
-// @version      0.9.0
-// @description  Đồng bộ bảng Kho hàng o2bsoft → NhapHang. Manual + auto 20s + auto-reload trang 60s để bắt đơn mới do người khác nhập.
+// @version      0.10.0
+// @description  Đồng bộ bảng Kho hàng o2bsoft → NhapHang. Manual + auto 20s + auto-reload trang 60s. v0.10: dùng nguyên mã đơn O2BSoft làm id NhapHang.
 // @match        https://xe.o2bsoft.com/*
 // @match        http://xe.o2bsoft.com/*
 // @grant        GM_xmlhttpRequest
@@ -250,6 +250,9 @@
     const arr = body?.data || body?.products || [];
     const idx = new Map();
     for (const p of arr) {
+      // v0.10+: mã đơn NhapHang = mã O2BSoft → index theo p.id trực tiếp
+      if (p.id) idx.set(String(p.id), p);
+      // Fallback cho đơn cũ (v0.9 trở xuống) lưu o2bId trong notes
       const m = (p.notes || '').match(/o2b:([^\s|]+)/);
       if (m) idx.set(m[1], p);
     }
@@ -285,6 +288,9 @@
 
   function buildPayload(row, stationsMap, senderStationLabel, employee) {
     return {
+      // v0.10+: dùng LUÔN mã đơn O2BSoft làm id NhapHang (không qua counter sinh YYMMDD.SSNN nữa)
+      // → 2 hệ thống cùng mã, đối chiếu nhanh, không sai lệch.
+      id: row.o2bId,
       senderName: row.senderName || null,
       senderPhone: row.senderPhone || null,
       senderStation: mapStation(senderStationLabel, stationsMap),
