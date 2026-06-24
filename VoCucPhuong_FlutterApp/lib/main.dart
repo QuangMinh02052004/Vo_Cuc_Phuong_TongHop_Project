@@ -1,37 +1,62 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-// Conditional imports
-import 'webview_mobile.dart' if (dart.library.html) 'webview_web.dart' as webview;
+import 'core/theme.dart';
+import 'core/notification_service.dart';
 import 'session.dart';
-import 'login_screen.dart';
+import 'features/splash/splash_screen.dart';
+import 'features/home/module_selector_screen.dart';
+import 'features/auth/login_screen.dart';
+import 'features/datve/datve_tab.dart';
+import 'features/nhaphang/nhaphang_tab.dart';
+import 'features/tonghop/tonghop_tab.dart';
 
-// Production URLs trên Vercel
-// Trỏ thẳng vào index.html để Vercel không strip trailing slash → relative CSS/JS path resolve đúng
-const String URL_DAT_VE = 'https://vocucphuong.vercel.app';
-const String URL_NHAP_HANG = 'https://vocucphuongmanage.vercel.app/nhap-hang/index.html';
-const String URL_QUAN_LY_XE = 'https://vocucphuongmanage.vercel.app/tong-hop/index.html';
-
-// Brand Colors
-class AppColors {
-  static const Color primary = Color(0xFF0EA5E9); // Sky blue
-  static const Color secondary = Color(0xFFE11D48); // Red
-  static const Color accent = Color(0xFF22C55E); // Green
-  static const Color orange = Color(0xFFF59E0B); // Orange
-  static const Color dark = Color(0xFF1E293B); // Dark blue gray
-  static const Color light = Color(0xFFF8FAFC); // Light gray
+/// Guard: nếu vào /tonghop hoặc /nhaphang mà module chưa login → đẩy về `/login/<module>`.
+Future<String?> _moduleGuard(String moduleKey) async {
+  final s = ModuleSession(moduleKey);
+  await s.load();
+  if (!s.isLoggedIn) return '/login/$moduleKey';
+  return null;
 }
 
-void main() {
+final _router = GoRouter(
+  initialLocation: '/splash',
+  routes: [
+    GoRoute(path: '/splash', builder: (_, __) => const SplashScreen()),
+    GoRoute(path: '/home', builder: (_, __) => const ModuleSelectorScreen()),
+    GoRoute(
+      path: '/login/:module',
+      builder: (_, state) => LoginScreen(
+        moduleKey: state.pathParameters['module'] ?? 'tonghop',
+      ),
+    ),
+    GoRoute(path: '/datve', builder: (_, __) => const DatVeHomeScreen()),
+    GoRoute(
+      path: '/nhaphang',
+      redirect: (_, __) => _moduleGuard('nhaphang'),
+      builder: (_, __) => const NhapHangHomeScreen(),
+    ),
+    GoRoute(
+      path: '/tonghop',
+      redirect: (_, __) => _moduleGuard('tonghop'),
+      builder: (_, __) => const TongHopHomeScreen(),
+    ),
+  ],
+);
+
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Cho phép xoay ngang và dọc
-  SystemChrome.setPreferredOrientations([
+  await ModuleSession.initStorage();
+  await NotificationService.instance.init();
+  await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
     DeviceOrientation.landscapeLeft,
     DeviceOrientation.landscapeRight,
   ]);
-  runApp(const VoCucPhuongApp());
+  runApp(const ProviderScope(child: VoCucPhuongApp()));
 }
 
 class VoCucPhuongApp extends StatelessWidget {
@@ -39,462 +64,11 @@ class VoCucPhuongApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router(
       title: 'Võ Cúc Phương',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: AppColors.primary,
-          brightness: Brightness.light,
-        ),
-        useMaterial3: true,
-        fontFamily: 'Roboto',
-        appBarTheme: const AppBarTheme(
-          centerTitle: true,
-          elevation: 0,
-          systemOverlayStyle: SystemUiOverlayStyle.light,
-        ),
-      ),
-      home: const SplashScreen(),
-    );
-  }
-}
-
-// Splash Screen
-class SplashScreen extends StatefulWidget {
-  const SplashScreen({super.key});
-
-  @override
-  State<SplashScreen> createState() => _SplashScreenState();
-}
-
-class _SplashScreenState extends State<SplashScreen>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _fadeAnimation;
-  late Animation<double> _scaleAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 1500),
-      vsync: this,
-    );
-
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeIn),
-    );
-
-    _scaleAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.elasticOut),
-    );
-
-    _controller.forward();
-
-    _boot();
-  }
-
-  Future<void> _boot() async {
-    await Session.load();
-    await Future.delayed(const Duration(milliseconds: 1500));
-    if (!mounted) return;
-    if (Session.role == null) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => LoginScreen(onDoneBuilder: () => const MainScreen())),
-      );
-    } else {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const MainScreen()),
-      );
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [AppColors.primary, Color(0xFF0284C7)],
-          ),
-        ),
-        child: Center(
-          child: AnimatedBuilder(
-            animation: _controller,
-            builder: (context, child) {
-              return FadeTransition(
-                opacity: _fadeAnimation,
-                child: ScaleTransition(
-                  scale: _scaleAnimation,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Logo Container
-                      Container(
-                        width: 120,
-                        height: 120,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(30),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withAlpha(51),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.directions_bus_rounded,
-                          size: 70,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                      const SizedBox(height: 30),
-                      const Text(
-                        'VÕ CÚC PHƯƠNG',
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          letterSpacing: 2,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Dịch vụ vận tải hành khách',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.white70,
-                          letterSpacing: 1,
-                        ),
-                      ),
-                      const SizedBox(height: 50),
-                      const SizedBox(
-                        width: 30,
-                        height: 30,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 3,
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// Main Screen with Bottom Navigation
-class MainScreen extends StatefulWidget {
-  const MainScreen({super.key});
-
-  @override
-  State<MainScreen> createState() => _MainScreenState();
-}
-
-class _MainScreenState extends State<MainScreen> {
-  int _currentIndex = 0;
-
-  late final List<NavItem> _navItems = _buildNavItems();
-
-  List<NavItem> _buildNavItems() {
-    final all = [
-      NavItem(
-        title: 'Đặt Vé',
-        icon: Icons.confirmation_number_outlined,
-        activeIcon: Icons.confirmation_number,
-        color: AppColors.primary,
-        lightColor: const Color(0xFFE0F2FE),
-        url: URL_DAT_VE,
-        appBarTitle: 'Đặt Vé Xe Khách',
-      ),
-      NavItem(
-        title: 'Nhập Hàng',
-        icon: Icons.inventory_2_outlined,
-        activeIcon: Icons.inventory_2,
-        color: AppColors.accent,
-        lightColor: const Color(0xFFDCFCE7),
-        url: URL_NHAP_HANG,
-        appBarTitle: 'Quản Lý Hàng Hóa',
-      ),
-      NavItem(
-        title: 'Tổng Hợp',
-        icon: Icons.directions_bus_outlined,
-        activeIcon: Icons.directions_bus,
-        color: AppColors.orange,
-        lightColor: const Color(0xFFFEF3C7),
-        url: URL_QUAN_LY_XE,
-        appBarTitle: 'Quản Lý Xe Khách',
-      ),
-    ];
-    // Khách hàng chỉ thấy tab Đặt Vé
-    if (Session.isCustomer) return [all[0]];
-    return all;
-  }
-
-
-  void _onNavTap(int index) {
-    setState(() {
-      _currentIndex = index;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
-
-    return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _navItems
-            .map((item) => WebViewScreen(
-                  title: item.appBarTitle,
-                  url: item.url,
-                  color: item.color,
-                  showAppBar: !isLandscape, // Ẩn app bar khi landscape
-                ))
-            .toList(),
-      ),
-      bottomNavigationBar: _buildBottomNav(isLandscape, bottomPadding),
-    );
-  }
-
-  Widget _buildBottomNav(bool isLandscape, double bottomPadding) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(25),
-            blurRadius: 20,
-            offset: const Offset(0, -5),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        child: Container(
-          // Nhỏ gọn hơn khi landscape
-          height: isLandscape ? 50 : 65,
-          padding: EdgeInsets.symmetric(
-            horizontal: isLandscape ? 16 : 8,
-            vertical: isLandscape ? 4 : 8,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: _navItems.asMap().entries.map((entry) {
-              final index = entry.key;
-              final item = entry.value;
-              final isSelected = _currentIndex == index;
-
-              return Expanded(
-                child: GestureDetector(
-                  onTap: () => _onNavTap(index),
-                  behavior: HitTestBehavior.opaque,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    padding: EdgeInsets.symmetric(
-                      horizontal: isSelected ? (isLandscape ? 12 : 16) : 8,
-                      vertical: isLandscape ? 6 : 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isSelected ? item.lightColor : Colors.transparent,
-                      borderRadius: BorderRadius.circular(isLandscape ? 10 : 15),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          isSelected ? item.activeIcon : item.icon,
-                          color: isSelected ? item.color : Colors.grey,
-                          size: isLandscape ? 20 : 24,
-                        ),
-                        if (isSelected) ...[
-                          SizedBox(width: isLandscape ? 4 : 8),
-                          Flexible(
-                            child: Text(
-                              item.title,
-                              style: TextStyle(
-                                color: item.color,
-                                fontWeight: FontWeight.w600,
-                                fontSize: isLandscape ? 11 : 13,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// Navigation Item Model
-class NavItem {
-  final String title;
-  final IconData icon;
-  final IconData activeIcon;
-  final Color color;
-  final Color lightColor;
-  final String url;
-  final String appBarTitle;
-
-  NavItem({
-    required this.title,
-    required this.icon,
-    required this.activeIcon,
-    required this.color,
-    required this.lightColor,
-    required this.url,
-    required this.appBarTitle,
-  });
-}
-
-// WebView Screen
-class WebViewScreen extends StatelessWidget {
-  final String title;
-  final String url;
-  final Color color;
-  final bool showAppBar;
-
-  const WebViewScreen({
-    super.key,
-    required this.title,
-    required this.url,
-    required this.color,
-    this.showAppBar = true,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    if (!showAppBar) {
-      // Landscape mode - fullscreen WebView
-      return SafeArea(
-        child: webview.WebViewWidget(url: url, color: color, title: title),
-      );
-    }
-
-    // Portrait mode - with app bar
-    return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: Colors.white.withAlpha(51),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(
-                Icons.directions_bus,
-                color: Colors.white,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Text(
-              title,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: color,
-        elevation: 0,
-        actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.account_circle, color: Colors.white),
-            onSelected: (v) async {
-              if (v == 'logout') {
-                final ctx = context;
-                final confirmed = await showDialog<bool>(
-                  context: ctx,
-                  builder: (c) => AlertDialog(
-                    title: const Text('Đăng xuất?'),
-                    content: Text(Session.isCustomer
-                        ? 'Quay lại màn đăng nhập?'
-                        : 'Đăng xuất khỏi tài khoản ${Session.username ?? ""}?'),
-                    actions: [
-                      TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Hủy')),
-                      ElevatedButton(onPressed: () => Navigator.pop(c, true), child: const Text('Đăng xuất')),
-                    ],
-                  ),
-                );
-                if (confirmed == true) {
-                  await Session.logout();
-                  if (!ctx.mounted) return;
-                  Navigator.pushAndRemoveUntil(
-                    ctx,
-                    MaterialPageRoute(builder: (_) => LoginScreen(onDoneBuilder: () => const MainScreen())),
-                    (route) => false,
-                  );
-                }
-              }
-            },
-            itemBuilder: (_) => [
-              PopupMenuItem(
-                enabled: false,
-                child: Text(
-                  Session.isCustomer
-                      ? 'Khách (chưa đăng nhập)'
-                      : '${Session.fullName ?? Session.username ?? ""} (${Session.role ?? "staff"})',
-                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
-                ),
-              ),
-              const PopupMenuDivider(),
-              const PopupMenuItem(
-                value: 'logout',
-                child: Row(children: [
-                  Icon(Icons.logout, size: 18),
-                  SizedBox(width: 8),
-                  Text('Đăng xuất'),
-                ]),
-              ),
-            ],
-          ),
-        ],
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [color, color.withAlpha(204)],
-            ),
-          ),
-        ),
-      ),
-      body: webview.WebViewWidget(url: url, color: color, title: title),
+      theme: AppTheme.light(),
+      routerConfig: _router,
     );
   }
 }
