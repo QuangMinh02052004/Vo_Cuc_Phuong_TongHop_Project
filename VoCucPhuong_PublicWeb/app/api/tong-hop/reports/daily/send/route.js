@@ -1,4 +1,5 @@
 import { queryTongHop } from '../../../../../../lib/database';
+import { ensureTHCoreColumns } from '../../../../../../lib/th-schema';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -133,6 +134,7 @@ async function buildReport(date) {
 // POST { date, to } - gửi email báo cáo qua Resend
 export async function POST(request) {
   try {
+    await ensureTHCoreColumns();
     const body = await request.json();
     const { date, to } = body;
     if (!date) return NextResponse.json({ error: 'Missing date' }, { status: 400 });

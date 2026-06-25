@@ -1,4 +1,5 @@
 import { queryTongHop } from '../../../../lib/database';
+import { ensureTHCoreColumns } from '../../../../lib/th-schema';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -31,6 +32,7 @@ function* dateRange(from, to) {
 
 export async function GET(request) {
   try {
+    await ensureTHCoreColumns();
     const { searchParams } = new URL(request.url);
     const fromStr = searchParams.get('from');
     const toStr = searchParams.get('to');

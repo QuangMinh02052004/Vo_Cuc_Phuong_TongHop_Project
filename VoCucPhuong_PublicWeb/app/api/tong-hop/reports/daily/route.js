@@ -1,4 +1,5 @@
 import { queryTongHop } from '../../../../../lib/database';
+import { ensureTHCoreColumns } from '../../../../../lib/th-schema';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -7,6 +8,7 @@ export const dynamic = 'force-dynamic';
 // Trả về { date, summary, byRoute, byTimeSlot, bookings }
 export async function GET(request) {
   try {
+    await ensureTHCoreColumns();
     const { searchParams } = new URL(request.url);
     const date = searchParams.get('date');
     if (!date) return NextResponse.json({ error: 'Missing date' }, { status: 400 });

@@ -1,4 +1,5 @@
 import { queryTongHop } from '../../../../../lib/database';
+import { ensureTHCoreColumns } from '../../../../../lib/th-schema';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -6,6 +7,7 @@ export const dynamic = 'force-dynamic';
 // GET ?phone=... | ?q=... — trả full lịch sử booking + summary
 export async function GET(request) {
   try {
+    await ensureTHCoreColumns();
     const { searchParams } = new URL(request.url);
     const phone = (searchParams.get('phone') || '').trim();
     const q = (searchParams.get('q') || '').trim();

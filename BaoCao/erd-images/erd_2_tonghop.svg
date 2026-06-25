@@ -1,0 +1,412 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1640" height="920" viewBox="0 0 1640 920">
+<rect width="1640" height="920" fill="#eef1f6"/>
+<defs><pattern id="grid" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#d3dae4"/></pattern></defs>
+<rect x="0" y="78" width="1640" height="842" fill="url(#grid)"/>
+<text x="820.0" y="40" font-family="DejaVu Sans, Arial, sans-serif" font-size="23" font-weight="800" fill="#1b2a4a" text-anchor="middle">ERD - TongHop DB</text>
+<text x="820.0" y="63" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" fill="#5c6b82" text-anchor="middle">Dat ve tai quay, dieu phoi xe  (Neon: ep-autumn-sun)</text>
+<path d="M142.5,520 L142.5,444.0 L535.5,444.0 L535.5,368" fill="none" stroke="#9aa5b4" stroke-width="1.6"/>
+<line x1="148.5" y1="511" x2="136.5" y2="511" stroke="#9aa5b4" stroke-width="1.6"/>
+<line x1="535.5" y1="368" x2="529.0" y2="381.0" stroke="#9aa5b4" stroke-width="1.6"/>
+<line x1="535.5" y1="368" x2="542.0" y2="381.0" stroke="#9aa5b4" stroke-width="1.6"/>
+<line x1="535.5" y1="368" x2="535.5" y2="381" stroke="#9aa5b4" stroke-width="1.6"/>
+<rect x="132.5" y="433.0" width="40.0" height="15" rx="7" fill="#f4f6f9" stroke="#d6dbe3" stroke-width="0.8"/>
+<text x="152.5" y="444.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="9.5" fill="#56657a" text-anchor="middle">route</text>
+<path d="M256,149.0 L348.0,149.0 L348.0,239.0 L440,239.0" fill="none" stroke="#9aa5b4" stroke-width="1.6"/>
+<line x1="265" y1="155.0" x2="265" y2="143.0" stroke="#9aa5b4" stroke-width="1.6"/>
+<line x1="440" y1="239.0" x2="427.0" y2="232.5" stroke="#9aa5b4" stroke-width="1.6"/>
+<line x1="440" y1="239.0" x2="427.0" y2="245.5" stroke="#9aa5b4" stroke-width="1.6"/>
+<line x1="440" y1="239.0" x2="427" y2="239.0" stroke="#9aa5b4" stroke-width="1.6"/>
+<rect x="308.4" y="131.0" width="79.19999999999999" height="15" rx="7" fill="#f4f6f9" stroke="#d6dbe3" stroke-width="0.8"/>
+<text x="348.0" y="142.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="9.5" fill="#56657a" text-anchor="middle">vehiclePlate</text>
+<path d="M291,369.0 L365.5,369.0 L365.5,239.0 L440,239.0" fill="none" stroke="#9aa5b4" stroke-width="1.6"/>
+<line x1="300" y1="375.0" x2="300" y2="363.0" stroke="#9aa5b4" stroke-width="1.6"/>
+<line x1="440" y1="239.0" x2="427.0" y2="232.5" stroke="#9aa5b4" stroke-width="1.6"/>
+<line x1="440" y1="239.0" x2="427.0" y2="245.5" stroke="#9aa5b4" stroke-width="1.6"/>
+<line x1="440" y1="239.0" x2="427" y2="239.0" stroke="#9aa5b4" stroke-width="1.6"/>
+<rect x="342.7" y="351.0" width="45.599999999999994" height="15" rx="7" fill="#f4f6f9" stroke="#d6dbe3" stroke-width="0.8"/>
+<text x="365.5" y="362.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="9.5" fill="#56657a" text-anchor="middle">driver</text>
+<path d="M691,239.0 L775.5,239.0 L775.5,436.5 L860,436.5" fill="none" stroke="#9aa5b4" stroke-width="1.6"/>
+<line x1="700" y1="245.0" x2="700" y2="233.0" stroke="#9aa5b4" stroke-width="1.6"/>
+<line x1="860" y1="436.5" x2="847.0" y2="430.0" stroke="#9aa5b4" stroke-width="1.6"/>
+<line x1="860" y1="436.5" x2="847.0" y2="443.0" stroke="#9aa5b4" stroke-width="1.6"/>
+<line x1="860" y1="436.5" x2="847" y2="436.5" stroke="#9aa5b4" stroke-width="1.6"/>
+<rect x="741.5" y="221.0" width="68.0" height="15" rx="7" fill="#f4f6f9" stroke="#d6dbe3" stroke-width="0.8"/>
+<text x="775.5" y="232.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="9.5" fill="#56657a" text-anchor="middle">timeSlotId</text>
+<path d="M565.5,368 L565.5,579.0 L969.0,579.0 L969.0,790" fill="none" stroke="#9aa5b4" stroke-width="1.6"/>
+<line x1="559.5" y1="377" x2="571.5" y2="377" stroke="#9aa5b4" stroke-width="1.6"/>
+<line x1="969.0" y1="790" x2="975.5" y2="777.0" stroke="#9aa5b4" stroke-width="1.6"/>
+<line x1="969.0" y1="790" x2="962.5" y2="777.0" stroke="#9aa5b4" stroke-width="1.6"/>
+<line x1="969.0" y1="790" x2="969.0" y2="777" stroke="#9aa5b4" stroke-width="1.6"/>
+<rect x="513.5" y="568.0" width="124.0" height="15" rx="7" fill="#f4f6f9" stroke="#d6dbe3" stroke-width="0.8"/>
+<text x="575.5" y="579.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="9.5" fill="#56657a" text-anchor="middle">timeSlot (composite)</text>
+<path d="M305,674.0 L372.5,674.0 L372.5,561.5 L440,561.5" fill="none" stroke="#9aa5b4" stroke-width="1.6"/>
+<line x1="314" y1="680.0" x2="314" y2="668.0" stroke="#9aa5b4" stroke-width="1.6"/>
+<line x1="440" y1="561.5" x2="427.0" y2="555.0" stroke="#9aa5b4" stroke-width="1.6"/>
+<line x1="440" y1="561.5" x2="427.0" y2="568.0" stroke="#9aa5b4" stroke-width="1.6"/>
+<line x1="440" y1="561.5" x2="427" y2="561.5" stroke="#9aa5b4" stroke-width="1.6"/>
+<rect x="352.5" y="656.0" width="40.0" height="15" rx="7" fill="#f4f6f9" stroke="#d6dbe3" stroke-width="0.8"/>
+<text x="372.5" y="667.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="9.5" fill="#56657a" text-anchor="middle">route</text>
+<path d="M1435.5,393 L1435.5,591.5 L969.0,591.5 L969.0,790" fill="none" stroke="#9aa5b4" stroke-width="1.6"/>
+<line x1="1429.5" y1="402" x2="1441.5" y2="402" stroke="#9aa5b4" stroke-width="1.6"/>
+<line x1="969.0" y1="790" x2="975.5" y2="777.0" stroke="#9aa5b4" stroke-width="1.6"/>
+<line x1="969.0" y1="790" x2="962.5" y2="777.0" stroke="#9aa5b4" stroke-width="1.6"/>
+<line x1="969.0" y1="790" x2="969.0" y2="777" stroke="#9aa5b4" stroke-width="1.6"/>
+<rect x="1422.7" y="580.5" width="45.599999999999994" height="15" rx="7" fill="#f4f6f9" stroke="#d6dbe3" stroke-width="0.8"/>
+<text x="1445.5" y="591.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="9.5" fill="#56657a" text-anchor="middle">userId</text>
+<path d="M1435.5,393 L1435.5,441.5 L1439.0,441.5 L1439.0,490" fill="none" stroke="#9aa5b4" stroke-width="1.6"/>
+<line x1="1429.5" y1="402" x2="1441.5" y2="402" stroke="#9aa5b4" stroke-width="1.6"/>
+<line x1="1439.0" y1="490" x2="1445.5" y2="477.0" stroke="#9aa5b4" stroke-width="1.6"/>
+<line x1="1439.0" y1="490" x2="1432.5" y2="477.0" stroke="#9aa5b4" stroke-width="1.6"/>
+<line x1="1439.0" y1="490" x2="1439.0" y2="477" stroke="#9aa5b4" stroke-width="1.6"/>
+<rect x="1422.7" y="430.5" width="45.599999999999994" height="15" rx="7" fill="#f4f6f9" stroke="#d6dbe3" stroke-width="0.8"/>
+<text x="1445.5" y="441.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="9.5" fill="#56657a" text-anchor="middle">userId</text>
+<rect x="42" y="98" width="216" height="108" rx="7" fill="#0b1b33" opacity="0.07"/>
+<rect x="40" y="95" width="216" height="108" rx="7" fill="#ffffff" stroke="#d6dbe3" stroke-width="1.2"/>
+<path d="M40,128 L40,102 Q40,95 47,95 L249,95 Q256,95 256,102 L256,128 Z" fill="#4361ee"/>
+<text x="148.0" y="116.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="700" fill="#ffffff" text-anchor="middle">TH_Vehicles</text>
+<circle cx="54" cy="140.5" r="3.3" fill="none" stroke="#e0a100" stroke-width="2"/><line x1="57" y1="140.5" x2="64" y2="140.5" stroke="#e0a100" stroke-width="2"/><line x1="61" y1="140.5" x2="61" y2="143.7" stroke="#e0a100" stroke-width="2"/><line x1="64" y1="140.5" x2="64" y2="143.7" stroke="#e0a100" stroke-width="2"/>
+<text x="70" y="144.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="700" fill="#1f2a37" text-decoration="underline">id</text>
+<text x="244" y="144.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">SERIAL</text>
+<rect x="41" y="153" width="214" height="25" fill="#f3f5fd"/>
+<line x1="41" y1="153" x2="255" y2="153" stroke="#eef1f5" stroke-width="1"/>
+<text x="70" y="169.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">code</text>
+<text x="244" y="169.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">VARCHAR(50)</text>
+<line x1="41" y1="178" x2="255" y2="178" stroke="#eef1f5" stroke-width="1"/>
+<text x="70" y="194.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">type</text>
+<text x="244" y="194.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">VARCHAR(50)</text>
+<rect x="42" y="293" width="251" height="158" rx="7" fill="#0b1b33" opacity="0.07"/>
+<rect x="40" y="290" width="251" height="158" rx="7" fill="#ffffff" stroke="#d6dbe3" stroke-width="1.2"/>
+<path d="M40,323 L40,297 Q40,290 47,290 L284,290 Q291,290 291,297 L291,323 Z" fill="#2a9d8f"/>
+<text x="165.5" y="311.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="700" fill="#ffffff" text-anchor="middle">TH_Drivers</text>
+<circle cx="54" cy="335.5" r="3.3" fill="none" stroke="#e0a100" stroke-width="2"/><line x1="57" y1="335.5" x2="64" y2="335.5" stroke="#e0a100" stroke-width="2"/><line x1="61" y1="335.5" x2="61" y2="338.7" stroke="#e0a100" stroke-width="2"/><line x1="64" y1="335.5" x2="64" y2="338.7" stroke="#e0a100" stroke-width="2"/>
+<text x="70" y="339.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="700" fill="#1f2a37" text-decoration="underline">id</text>
+<text x="279" y="339.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">SERIAL</text>
+<rect x="41" y="348" width="249" height="25" fill="#f2f9f8"/>
+<line x1="41" y1="348" x2="290" y2="348" stroke="#eef1f5" stroke-width="1"/>
+<text x="70" y="364.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">name</text>
+<text x="279" y="364.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">VARCHAR(200)</text>
+<line x1="41" y1="373" x2="290" y2="373" stroke="#eef1f5" stroke-width="1"/>
+<text x="70" y="389.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">phone</text>
+<text x="279" y="389.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">VARCHAR(20)</text>
+<rect x="41" y="398" width="249" height="25" fill="#f2f9f8"/>
+<line x1="41" y1="398" x2="290" y2="398" stroke="#eef1f5" stroke-width="1"/>
+<text x="70" y="414.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">vehiclePlate</text>
+<text x="279" y="414.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">VARCHAR(50)</text>
+<line x1="41" y1="423" x2="290" y2="423" stroke="#eef1f5" stroke-width="1"/>
+<text x="70" y="439.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">active</text>
+<text x="279" y="439.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">BOOLEAN</text>
+<rect x="42" y="523" width="265" height="308" rx="7" fill="#0b1b33" opacity="0.07"/>
+<rect x="40" y="520" width="265" height="308" rx="7" fill="#ffffff" stroke="#d6dbe3" stroke-width="1.2"/>
+<path d="M40,553 L40,527 Q40,520 47,520 L298,520 Q305,520 305,527 L305,553 Z" fill="#e76f51"/>
+<text x="172.5" y="541.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="700" fill="#ffffff" text-anchor="middle">TH_Routes</text>
+<circle cx="54" cy="565.5" r="3.3" fill="none" stroke="#e0a100" stroke-width="2"/><line x1="57" y1="565.5" x2="64" y2="565.5" stroke="#e0a100" stroke-width="2"/><line x1="61" y1="565.5" x2="61" y2="568.7" stroke="#e0a100" stroke-width="2"/><line x1="64" y1="565.5" x2="64" y2="568.7" stroke="#e0a100" stroke-width="2"/>
+<text x="70" y="569.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="700" fill="#1f2a37" text-decoration="underline">id</text>
+<text x="293" y="569.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">SERIAL</text>
+<rect x="41" y="578" width="263" height="25" fill="#fdf6f4"/>
+<line x1="41" y1="578" x2="304" y2="578" stroke="#eef1f5" stroke-width="1"/>
+<circle cx="56" cy="590.5" r="3.6" fill="#fff" stroke="#1a843f" stroke-width="2"/>
+<text x="70" y="594.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">name</text>
+<text x="293" y="594.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">VARCHAR(100)</text>
+<line x1="41" y1="603" x2="304" y2="603" stroke="#eef1f5" stroke-width="1"/>
+<text x="70" y="619.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">fromStation</text>
+<text x="293" y="619.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">VARCHAR(100)</text>
+<rect x="41" y="628" width="263" height="25" fill="#fdf6f4"/>
+<line x1="41" y1="628" x2="304" y2="628" stroke="#eef1f5" stroke-width="1"/>
+<text x="70" y="644.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">toStation</text>
+<text x="293" y="644.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">VARCHAR(100)</text>
+<line x1="41" y1="653" x2="304" y2="653" stroke="#eef1f5" stroke-width="1"/>
+<text x="70" y="669.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">distance</text>
+<text x="293" y="669.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">VARCHAR(50)</text>
+<rect x="41" y="678" width="263" height="25" fill="#fdf6f4"/>
+<line x1="41" y1="678" x2="304" y2="678" stroke="#eef1f5" stroke-width="1"/>
+<text x="70" y="694.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">seats</text>
+<text x="293" y="694.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">INTEGER</text>
+<line x1="41" y1="703" x2="304" y2="703" stroke="#eef1f5" stroke-width="1"/>
+<text x="70" y="719.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">busType</text>
+<text x="293" y="719.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">VARCHAR(50)</text>
+<rect x="41" y="728" width="263" height="25" fill="#fdf6f4"/>
+<line x1="41" y1="728" x2="304" y2="728" stroke="#eef1f5" stroke-width="1"/>
+<text x="70" y="744.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">operatingStart</text>
+<text x="293" y="744.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">VARCHAR(10)</text>
+<line x1="41" y1="753" x2="304" y2="753" stroke="#eef1f5" stroke-width="1"/>
+<text x="70" y="769.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">operatingEnd</text>
+<text x="293" y="769.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">VARCHAR(10)</text>
+<rect x="41" y="778" width="263" height="25" fill="#fdf6f4"/>
+<line x1="41" y1="778" x2="304" y2="778" stroke="#eef1f5" stroke-width="1"/>
+<text x="70" y="794.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">intervalMinutes</text>
+<text x="293" y="794.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">INTEGER</text>
+<line x1="41" y1="803" x2="304" y2="803" stroke="#eef1f5" stroke-width="1"/>
+<text x="70" y="819.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">isActive</text>
+<text x="293" y="819.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">BOOLEAN</text>
+<rect x="442" y="113" width="251" height="258" rx="7" fill="#0b1b33" opacity="0.07"/>
+<rect x="440" y="110" width="251" height="258" rx="7" fill="#ffffff" stroke="#d6dbe3" stroke-width="1.2"/>
+<path d="M440,143 L440,117 Q440,110 447,110 L684,110 Q691,110 691,117 L691,143 Z" fill="#7b2cbf"/>
+<text x="565.5" y="131.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="700" fill="#ffffff" text-anchor="middle">TH_TimeSlots</text>
+<circle cx="454" cy="155.5" r="3.3" fill="none" stroke="#e0a100" stroke-width="2"/><line x1="457" y1="155.5" x2="464" y2="155.5" stroke="#e0a100" stroke-width="2"/><line x1="461" y1="155.5" x2="461" y2="158.7" stroke="#e0a100" stroke-width="2"/><line x1="464" y1="155.5" x2="464" y2="158.7" stroke="#e0a100" stroke-width="2"/>
+<text x="470" y="159.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="700" fill="#1f2a37" text-decoration="underline">id</text>
+<text x="679" y="159.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">SERIAL</text>
+<rect x="441" y="168" width="249" height="25" fill="#f7f2fb"/>
+<line x1="441" y1="168" x2="690" y2="168" stroke="#eef1f5" stroke-width="1"/>
+<text x="470" y="184.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">time</text>
+<text x="679" y="184.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">VARCHAR(10)</text>
+<line x1="441" y1="193" x2="690" y2="193" stroke="#eef1f5" stroke-width="1"/>
+<text x="470" y="209.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">date</text>
+<text x="679" y="209.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">VARCHAR(20)</text>
+<rect x="441" y="218" width="249" height="25" fill="#f7f2fb"/>
+<line x1="441" y1="218" x2="690" y2="218" stroke="#eef1f5" stroke-width="1"/>
+<path d="M456,226.5 L460.2,230.5 L456,234.5 L451.8,230.5 Z" fill="#fff" stroke="#2d6cdf" stroke-width="1.8"/>
+<text x="470" y="234.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">route</text>
+<text x="679" y="234.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">VARCHAR(100)</text>
+<line x1="441" y1="243" x2="690" y2="243" stroke="#eef1f5" stroke-width="1"/>
+<text x="470" y="259.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">type</text>
+<text x="679" y="259.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">VARCHAR(50)</text>
+<rect x="441" y="268" width="249" height="25" fill="#f7f2fb"/>
+<line x1="441" y1="268" x2="690" y2="268" stroke="#eef1f5" stroke-width="1"/>
+<text x="470" y="284.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">code</text>
+<text x="679" y="284.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">VARCHAR(50)</text>
+<line x1="441" y1="293" x2="690" y2="293" stroke="#eef1f5" stroke-width="1"/>
+<path d="M456,301.5 L460.2,305.5 L456,309.5 L451.8,305.5 Z" fill="#fff" stroke="#2d6cdf" stroke-width="1.8"/>
+<text x="470" y="309.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">driver</text>
+<text x="679" y="309.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">VARCHAR(100)</text>
+<rect x="441" y="318" width="249" height="25" fill="#f7f2fb"/>
+<line x1="441" y1="318" x2="690" y2="318" stroke="#eef1f5" stroke-width="1"/>
+<text x="470" y="334.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">phone</text>
+<text x="679" y="334.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">VARCHAR(20)</text>
+<line x1="441" y1="343" x2="690" y2="343" stroke="#eef1f5" stroke-width="1"/>
+<path d="M456,351.5 L460.2,355.5 L456,359.5 L451.8,355.5 Z" fill="#fff" stroke="#2d6cdf" stroke-width="1.8"/>
+<text x="470" y="359.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">vehiclePlate</text>
+<text x="679" y="359.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">VARCHAR(50)</text>
+<rect x="442" y="473" width="251" height="183" rx="7" fill="#0b1b33" opacity="0.07"/>
+<rect x="440" y="470" width="251" height="183" rx="7" fill="#ffffff" stroke="#d6dbe3" stroke-width="1.2"/>
+<path d="M440,503 L440,477 Q440,470 447,470 L684,470 Q691,470 691,477 L691,503 Z" fill="#e63946"/>
+<text x="565.5" y="491.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="700" fill="#ffffff" text-anchor="middle">TH_PickupStations</text>
+<circle cx="454" cy="515.5" r="3.3" fill="none" stroke="#e0a100" stroke-width="2"/><line x1="457" y1="515.5" x2="464" y2="515.5" stroke="#e0a100" stroke-width="2"/><line x1="461" y1="515.5" x2="461" y2="518.7" stroke="#e0a100" stroke-width="2"/><line x1="464" y1="515.5" x2="464" y2="518.7" stroke="#e0a100" stroke-width="2"/>
+<text x="470" y="519.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="700" fill="#1f2a37" text-decoration="underline">id</text>
+<text x="679" y="519.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">SERIAL</text>
+<rect x="441" y="528" width="249" height="25" fill="#fdf3f3"/>
+<line x1="441" y1="528" x2="690" y2="528" stroke="#eef1f5" stroke-width="1"/>
+<text x="470" y="544.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">stt</text>
+<text x="679" y="544.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">INTEGER</text>
+<line x1="441" y1="553" x2="690" y2="553" stroke="#eef1f5" stroke-width="1"/>
+<text x="470" y="569.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">stationName</text>
+<text x="679" y="569.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">VARCHAR(200)</text>
+<rect x="441" y="578" width="249" height="25" fill="#fdf3f3"/>
+<line x1="441" y1="578" x2="690" y2="578" stroke="#eef1f5" stroke-width="1"/>
+<path d="M456,586.5 L460.2,590.5 L456,594.5 L451.8,590.5 Z" fill="#fff" stroke="#2d6cdf" stroke-width="1.8"/>
+<text x="470" y="594.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">route</text>
+<text x="679" y="594.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">VARCHAR(100)</text>
+<line x1="441" y1="603" x2="690" y2="603" stroke="#eef1f5" stroke-width="1"/>
+<text x="470" y="619.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">direction</text>
+<text x="679" y="619.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">VARCHAR(20)</text>
+<rect x="441" y="628" width="249" height="25" fill="#fdf3f3"/>
+<line x1="441" y1="628" x2="690" y2="628" stroke="#eef1f5" stroke-width="1"/>
+<text x="470" y="644.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">aliases</text>
+<text x="679" y="644.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">TEXT[]</text>
+<rect x="862" y="98" width="271" height="683" rx="7" fill="#0b1b33" opacity="0.07"/>
+<rect x="860" y="95" width="271" height="683" rx="7" fill="#ffffff" stroke="#d6dbe3" stroke-width="1.2"/>
+<path d="M860,128 L860,102 Q860,95 867,95 L1124,95 Q1131,95 1131,102 L1131,128 Z" fill="#0096c7"/>
+<text x="995.5" y="116.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="700" fill="#ffffff" text-anchor="middle">TH_Bookings</text>
+<circle cx="874" cy="140.5" r="3.3" fill="none" stroke="#e0a100" stroke-width="2"/><line x1="877" y1="140.5" x2="884" y2="140.5" stroke="#e0a100" stroke-width="2"/><line x1="881" y1="140.5" x2="881" y2="143.7" stroke="#e0a100" stroke-width="2"/><line x1="884" y1="140.5" x2="884" y2="143.7" stroke="#e0a100" stroke-width="2"/>
+<text x="890" y="144.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="700" fill="#1f2a37" text-decoration="underline">id</text>
+<text x="1119" y="144.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">SERIAL</text>
+<rect x="861" y="153" width="269" height="25" fill="#eff8fb"/>
+<line x1="861" y1="153" x2="1130" y2="153" stroke="#eef1f5" stroke-width="1"/>
+<path d="M876,161.5 L880.2,165.5 L876,169.5 L871.8,165.5 Z" fill="#fff" stroke="#2d6cdf" stroke-width="1.8"/>
+<text x="890" y="169.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">timeSlotId</text>
+<text x="1119" y="169.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">INTEGER</text>
+<line x1="861" y1="178" x2="1130" y2="178" stroke="#eef1f5" stroke-width="1"/>
+<text x="890" y="194.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">phone</text>
+<text x="1119" y="194.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">VARCHAR(20)</text>
+<rect x="861" y="203" width="269" height="25" fill="#eff8fb"/>
+<line x1="861" y1="203" x2="1130" y2="203" stroke="#eef1f5" stroke-width="1"/>
+<text x="890" y="219.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">name</text>
+<text x="1119" y="219.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">VARCHAR(200)</text>
+<line x1="861" y1="228" x2="1130" y2="228" stroke="#eef1f5" stroke-width="1"/>
+<text x="890" y="244.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">gender</text>
+<text x="1119" y="244.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">VARCHAR(10)</text>
+<rect x="861" y="253" width="269" height="25" fill="#eff8fb"/>
+<line x1="861" y1="253" x2="1130" y2="253" stroke="#eef1f5" stroke-width="1"/>
+<text x="890" y="269.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">nationality</text>
+<text x="1119" y="269.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">VARCHAR(100)</text>
+<line x1="861" y1="278" x2="1130" y2="278" stroke="#eef1f5" stroke-width="1"/>
+<text x="890" y="294.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">pickupMethod</text>
+<text x="1119" y="294.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">VARCHAR(50)</text>
+<rect x="861" y="303" width="269" height="25" fill="#eff8fb"/>
+<line x1="861" y1="303" x2="1130" y2="303" stroke="#eef1f5" stroke-width="1"/>
+<text x="890" y="319.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">pickupAddress</text>
+<text x="1119" y="319.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">VARCHAR(500)</text>
+<line x1="861" y1="328" x2="1130" y2="328" stroke="#eef1f5" stroke-width="1"/>
+<text x="890" y="344.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">dropoffMethod</text>
+<text x="1119" y="344.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">VARCHAR(50)</text>
+<rect x="861" y="353" width="269" height="25" fill="#eff8fb"/>
+<line x1="861" y1="353" x2="1130" y2="353" stroke="#eef1f5" stroke-width="1"/>
+<text x="890" y="369.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">dropoffAddress</text>
+<text x="1119" y="369.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">VARCHAR(500)</text>
+<line x1="861" y1="378" x2="1130" y2="378" stroke="#eef1f5" stroke-width="1"/>
+<text x="890" y="394.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">note</text>
+<text x="1119" y="394.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">TEXT</text>
+<rect x="861" y="403" width="269" height="25" fill="#eff8fb"/>
+<line x1="861" y1="403" x2="1130" y2="403" stroke="#eef1f5" stroke-width="1"/>
+<text x="890" y="419.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">seatNumber</text>
+<text x="1119" y="419.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">INTEGER</text>
+<line x1="861" y1="428" x2="1130" y2="428" stroke="#eef1f5" stroke-width="1"/>
+<text x="890" y="444.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">amount</text>
+<text x="1119" y="444.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">DECIMAL</text>
+<rect x="861" y="453" width="269" height="25" fill="#eff8fb"/>
+<line x1="861" y1="453" x2="1130" y2="453" stroke="#eef1f5" stroke-width="1"/>
+<text x="890" y="469.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">paid</text>
+<text x="1119" y="469.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">DECIMAL</text>
+<line x1="861" y1="478" x2="1130" y2="478" stroke="#eef1f5" stroke-width="1"/>
+<text x="890" y="494.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">deposit</text>
+<text x="1119" y="494.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">DECIMAL</text>
+<rect x="861" y="503" width="269" height="25" fill="#eff8fb"/>
+<line x1="861" y1="503" x2="1130" y2="503" stroke="#eef1f5" stroke-width="1"/>
+<text x="890" y="519.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">timeSlot</text>
+<text x="1119" y="519.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">VARCHAR(10)</text>
+<line x1="861" y1="528" x2="1130" y2="528" stroke="#eef1f5" stroke-width="1"/>
+<text x="890" y="544.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">date</text>
+<text x="1119" y="544.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">VARCHAR(20)</text>
+<rect x="861" y="553" width="269" height="25" fill="#eff8fb"/>
+<line x1="861" y1="553" x2="1130" y2="553" stroke="#eef1f5" stroke-width="1"/>
+<text x="890" y="569.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">route</text>
+<text x="1119" y="569.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">VARCHAR(100)</text>
+<line x1="861" y1="578" x2="1130" y2="578" stroke="#eef1f5" stroke-width="1"/>
+<circle cx="876" cy="590.5" r="3.6" fill="#fff" stroke="#1a843f" stroke-width="2"/>
+<text x="890" y="594.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">clientReqId</text>
+<text x="1119" y="594.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">TEXT</text>
+<rect x="861" y="603" width="269" height="25" fill="#eff8fb"/>
+<line x1="861" y1="603" x2="1130" y2="603" stroke="#eef1f5" stroke-width="1"/>
+<text x="890" y="619.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">callStatus</text>
+<text x="1119" y="619.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">VARCHAR(100)</text>
+<line x1="861" y1="628" x2="1130" y2="628" stroke="#eef1f5" stroke-width="1"/>
+<text x="890" y="644.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">printed</text>
+<text x="1119" y="644.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">BOOLEAN</text>
+<rect x="861" y="653" width="269" height="25" fill="#eff8fb"/>
+<line x1="861" y1="653" x2="1130" y2="653" stroke="#eef1f5" stroke-width="1"/>
+<text x="890" y="669.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">qrToken</text>
+<text x="1119" y="669.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">TEXT</text>
+<line x1="861" y1="678" x2="1130" y2="678" stroke="#eef1f5" stroke-width="1"/>
+<text x="890" y="694.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">scanStatus</text>
+<text x="1119" y="694.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">VARCHAR(20)</text>
+<rect x="861" y="703" width="269" height="25" fill="#eff8fb"/>
+<line x1="861" y1="703" x2="1130" y2="703" stroke="#eef1f5" stroke-width="1"/>
+<text x="890" y="719.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">scannedAt</text>
+<text x="1119" y="719.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">TIMESTAMP</text>
+<line x1="861" y1="728" x2="1130" y2="728" stroke="#eef1f5" stroke-width="1"/>
+<text x="890" y="744.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">createdAt</text>
+<text x="1119" y="744.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">TIMESTAMP</text>
+<rect x="861" y="753" width="269" height="25" fill="#eff8fb"/>
+<line x1="861" y1="753" x2="1130" y2="753" stroke="#eef1f5" stroke-width="1"/>
+<text x="890" y="769.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">updatedAt</text>
+<text x="1119" y="769.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">TIMESTAMP</text>
+<rect x="862" y="793" width="218" height="208" rx="7" fill="#0b1b33" opacity="0.07"/>
+<rect x="860" y="790" width="218" height="208" rx="7" fill="#ffffff" stroke="#d6dbe3" stroke-width="1.2"/>
+<path d="M860,823 L860,797 Q860,790 867,790 L1071,790 Q1078,790 1078,797 L1078,823 Z" fill="#d4a017"/>
+<text x="969.0" y="811.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="700" fill="#ffffff" text-anchor="middle">TH_SeatLocks</text>
+<circle cx="874" cy="835.5" r="3.3" fill="none" stroke="#e0a100" stroke-width="2"/><line x1="877" y1="835.5" x2="884" y2="835.5" stroke="#e0a100" stroke-width="2"/><line x1="881" y1="835.5" x2="881" y2="838.7" stroke="#e0a100" stroke-width="2"/><line x1="884" y1="835.5" x2="884" y2="838.7" stroke="#e0a100" stroke-width="2"/>
+<text x="890" y="839.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="700" fill="#1f2a37" text-decoration="underline">id</text>
+<text x="1066" y="839.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">SERIAL</text>
+<rect x="861" y="848" width="216" height="25" fill="#fcf9f1"/>
+<line x1="861" y1="848" x2="1077" y2="848" stroke="#eef1f5" stroke-width="1"/>
+<text x="890" y="864.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">date</text>
+<text x="1066" y="864.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">VARCHAR(20)</text>
+<line x1="861" y1="873" x2="1077" y2="873" stroke="#eef1f5" stroke-width="1"/>
+<text x="890" y="889.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">time</text>
+<text x="1066" y="889.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">VARCHAR(10)</text>
+<rect x="861" y="898" width="216" height="25" fill="#fcf9f1"/>
+<line x1="861" y1="898" x2="1077" y2="898" stroke="#eef1f5" stroke-width="1"/>
+<text x="890" y="914.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">route</text>
+<text x="1066" y="914.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">VARCHAR(100)</text>
+<line x1="861" y1="923" x2="1077" y2="923" stroke="#eef1f5" stroke-width="1"/>
+<text x="890" y="939.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">seatNumber</text>
+<text x="1066" y="939.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">INTEGER</text>
+<rect x="861" y="948" width="216" height="25" fill="#fcf9f1"/>
+<line x1="861" y1="948" x2="1077" y2="948" stroke="#eef1f5" stroke-width="1"/>
+<path d="M876,956.5 L880.2,960.5 L876,964.5 L871.8,960.5 Z" fill="#fff" stroke="#2d6cdf" stroke-width="1.8"/>
+<text x="890" y="964.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">userId</text>
+<text x="1066" y="964.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">INTEGER</text>
+<line x1="861" y1="973" x2="1077" y2="973" stroke="#eef1f5" stroke-width="1"/>
+<text x="890" y="989.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">expiresAt</text>
+<text x="1066" y="989.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">TIMESTAMP</text>
+<rect x="1322" y="113" width="231" height="283" rx="7" fill="#0b1b33" opacity="0.07"/>
+<rect x="1320" y="110" width="231" height="283" rx="7" fill="#ffffff" stroke="#d6dbe3" stroke-width="1.2"/>
+<path d="M1320,143 L1320,117 Q1320,110 1327,110 L1544,110 Q1551,110 1551,117 L1551,143 Z" fill="#9d4edd"/>
+<text x="1435.5" y="131.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="700" fill="#ffffff" text-anchor="middle">TH_Users</text>
+<circle cx="1334" cy="155.5" r="3.3" fill="none" stroke="#e0a100" stroke-width="2"/><line x1="1337" y1="155.5" x2="1344" y2="155.5" stroke="#e0a100" stroke-width="2"/><line x1="1341" y1="155.5" x2="1341" y2="158.7" stroke="#e0a100" stroke-width="2"/><line x1="1344" y1="155.5" x2="1344" y2="158.7" stroke="#e0a100" stroke-width="2"/>
+<text x="1350" y="159.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="700" fill="#1f2a37" text-decoration="underline">id</text>
+<text x="1539" y="159.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">SERIAL</text>
+<rect x="1321" y="168" width="229" height="25" fill="#f9f4fc"/>
+<line x1="1321" y1="168" x2="1550" y2="168" stroke="#eef1f5" stroke-width="1"/>
+<circle cx="1336" cy="180.5" r="3.6" fill="#fff" stroke="#1a843f" stroke-width="2"/>
+<text x="1350" y="184.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">username</text>
+<text x="1539" y="184.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">VARCHAR(100)</text>
+<line x1="1321" y1="193" x2="1550" y2="193" stroke="#eef1f5" stroke-width="1"/>
+<text x="1350" y="209.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">password</text>
+<text x="1539" y="209.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">VARCHAR(255)</text>
+<rect x="1321" y="218" width="229" height="25" fill="#f9f4fc"/>
+<line x1="1321" y1="218" x2="1550" y2="218" stroke="#eef1f5" stroke-width="1"/>
+<text x="1350" y="234.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">role</text>
+<text x="1539" y="234.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">VARCHAR(20)</text>
+<line x1="1321" y1="243" x2="1550" y2="243" stroke="#eef1f5" stroke-width="1"/>
+<text x="1350" y="259.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">fullName</text>
+<text x="1539" y="259.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">VARCHAR(200)</text>
+<rect x="1321" y="268" width="229" height="25" fill="#f9f4fc"/>
+<line x1="1321" y1="268" x2="1550" y2="268" stroke="#eef1f5" stroke-width="1"/>
+<text x="1350" y="284.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">station</text>
+<text x="1539" y="284.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">VARCHAR(100)</text>
+<line x1="1321" y1="293" x2="1550" y2="293" stroke="#eef1f5" stroke-width="1"/>
+<text x="1350" y="309.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">permissions</text>
+<text x="1539" y="309.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">JSONB</text>
+<rect x="1321" y="318" width="229" height="25" fill="#f9f4fc"/>
+<line x1="1321" y1="318" x2="1550" y2="318" stroke="#eef1f5" stroke-width="1"/>
+<text x="1350" y="334.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">scope</text>
+<text x="1539" y="334.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">VARCHAR(20)</text>
+<line x1="1321" y1="343" x2="1550" y2="343" stroke="#eef1f5" stroke-width="1"/>
+<text x="1350" y="359.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">email</text>
+<text x="1539" y="359.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">VARCHAR(100)</text>
+<rect x="1321" y="368" width="229" height="25" fill="#f9f4fc"/>
+<line x1="1321" y1="368" x2="1550" y2="368" stroke="#eef1f5" stroke-width="1"/>
+<text x="1350" y="384.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">phone</text>
+<text x="1539" y="384.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">VARCHAR(20)</text>
+<rect x="1322" y="493" width="238" height="233" rx="7" fill="#0b1b33" opacity="0.07"/>
+<rect x="1320" y="490" width="238" height="233" rx="7" fill="#ffffff" stroke="#d6dbe3" stroke-width="1.2"/>
+<path d="M1320,523 L1320,497 Q1320,490 1327,490 L1551,490 Q1558,490 1558,497 L1558,523 Z" fill="#118ab2"/>
+<text x="1439.0" y="511.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="700" fill="#ffffff" text-anchor="middle">TH_ActivityLog</text>
+<circle cx="1334" cy="535.5" r="3.3" fill="none" stroke="#e0a100" stroke-width="2"/><line x1="1337" y1="535.5" x2="1344" y2="535.5" stroke="#e0a100" stroke-width="2"/><line x1="1341" y1="535.5" x2="1341" y2="538.7" stroke="#e0a100" stroke-width="2"/><line x1="1344" y1="535.5" x2="1344" y2="538.7" stroke="#e0a100" stroke-width="2"/>
+<text x="1350" y="539.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="700" fill="#1f2a37" text-decoration="underline">id</text>
+<text x="1546" y="539.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">SERIAL</text>
+<rect x="1321" y="548" width="236" height="25" fill="#f0f7fa"/>
+<line x1="1321" y1="548" x2="1557" y2="548" stroke="#eef1f5" stroke-width="1"/>
+<path d="M1336,556.5 L1340.2,560.5 L1336,564.5 L1331.8,560.5 Z" fill="#fff" stroke="#2d6cdf" stroke-width="1.8"/>
+<text x="1350" y="564.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">userId</text>
+<text x="1546" y="564.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">INTEGER</text>
+<line x1="1321" y1="573" x2="1557" y2="573" stroke="#eef1f5" stroke-width="1"/>
+<text x="1350" y="589.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">action</text>
+<text x="1546" y="589.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">VARCHAR(50)</text>
+<rect x="1321" y="598" width="236" height="25" fill="#f0f7fa"/>
+<line x1="1321" y1="598" x2="1557" y2="598" stroke="#eef1f5" stroke-width="1"/>
+<text x="1350" y="614.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">entityType</text>
+<text x="1546" y="614.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">VARCHAR(50)</text>
+<line x1="1321" y1="623" x2="1557" y2="623" stroke="#eef1f5" stroke-width="1"/>
+<text x="1350" y="639.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">entityId</text>
+<text x="1546" y="639.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">VARCHAR(50)</text>
+<rect x="1321" y="648" width="236" height="25" fill="#f0f7fa"/>
+<line x1="1321" y1="648" x2="1557" y2="648" stroke="#eef1f5" stroke-width="1"/>
+<text x="1350" y="664.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">description</text>
+<text x="1546" y="664.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">TEXT</text>
+<line x1="1321" y1="673" x2="1557" y2="673" stroke="#eef1f5" stroke-width="1"/>
+<text x="1350" y="689.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">ipAddress</text>
+<text x="1546" y="689.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">VARCHAR(50)</text>
+<rect x="1321" y="698" width="236" height="25" fill="#f0f7fa"/>
+<line x1="1321" y1="698" x2="1557" y2="698" stroke="#eef1f5" stroke-width="1"/>
+<text x="1350" y="714.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#1f2a37">createdAt</text>
+<text x="1546" y="714.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.5" fill="#8a97a8" text-anchor="end">TIMESTAMP</text>
+<rect x="14" y="877" width="430" height="28" rx="8" fill="#ffffff" stroke="#d6dbe3" stroke-width="1"/>
+<text x="24" y="896" font-family="DejaVu Sans, Arial, sans-serif" font-size="11" font-weight="700" fill="#5c6b82">Chu thich:</text>
+<circle cx="100" cy="892" r="3.3" fill="none" stroke="#e0a100" stroke-width="2"/><line x1="103" y1="892" x2="110" y2="892" stroke="#e0a100" stroke-width="2"/><line x1="107" y1="892" x2="107" y2="895.2" stroke="#e0a100" stroke-width="2"/><line x1="110" y1="892" x2="110" y2="895.2" stroke="#e0a100" stroke-width="2"/>
+<text x="116" y="896" font-family="DejaVu Sans, Arial, sans-serif" font-size="11" fill="#5c6b82">Khoa chinh</text>
+<path d="M212,888 L216.2,892 L212,896 L207.8,892 Z" fill="#fff" stroke="#2d6cdf" stroke-width="1.8"/>
+<text x="220" y="896" font-family="DejaVu Sans, Arial, sans-serif" font-size="11" fill="#5c6b82">Khoa ngoai</text>
+<circle cx="320" cy="892" r="3.6" fill="#fff" stroke="#1a843f" stroke-width="2"/>
+<text x="328" y="896" font-family="DejaVu Sans, Arial, sans-serif" font-size="11" fill="#5c6b82">Duy nhat</text>
+</svg>

@@ -14,6 +14,7 @@ export const dynamic = 'force-dynamic';
 
 async function ensureTongHopPermColumns() {
   await queryTongHop(`ALTER TABLE "TH_Users" ADD COLUMN IF NOT EXISTS "permissions" JSONB`);
+  await queryTongHop(`ALTER TABLE "TH_Users" ADD COLUMN IF NOT EXISTS active BOOLEAN DEFAULT true`);
 }
 
 export async function GET(request, { params }) {
