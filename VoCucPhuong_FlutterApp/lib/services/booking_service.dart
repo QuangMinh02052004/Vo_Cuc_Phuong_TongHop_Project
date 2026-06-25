@@ -20,11 +20,13 @@ class BookingService {
     String? date,
     String? route,
     String? search,
+    String? since,
   }) async {
     final q = <String, dynamic>{};
     if (date != null) q['date'] = date;
     if (route != null) q['route'] = route;
     if (search != null && search.isNotEmpty) q['search'] = search;
+    if (since != null && since.isNotEmpty) q['since'] = since;
 
     final res = await _api.get('${ApiUrls.tongHopApi}/bookings',
         query: q, token: _tok);

@@ -17,6 +17,7 @@ class NotificationService {
       'Báo khi đặt vé hoặc tạo đơn hàng thành công';
 
   bool _ready = false;
+  void Function(String payload)? onTap;
 
   Future<void> init() async {
     if (_ready) return;
@@ -38,7 +39,13 @@ class NotificationService {
       iOS: iosInit,
     );
 
-    await _plugin.initialize(initSettings);
+    await _plugin.initialize(
+      initSettings,
+      onDidReceiveNotificationResponse: (resp) {
+        final p = resp.payload;
+        if (p != null && p.isNotEmpty) onTap?.call(p);
+      },
+    );
 
     // Tạo channel sẵn cho Android 8+.
     final androidImpl = _plugin

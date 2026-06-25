@@ -33,10 +33,12 @@ class ProductService {
 
   String? get _tok => _session.token;
 
-  Future<List<Product>> listProducts({String? date, String? status}) async {
+  Future<List<Product>> listProducts(
+      {String? date, String? status, String? search}) async {
     final q = <String, dynamic>{};
     if (date != null) q['date'] = date;
     if (status != null) q['status'] = status;
+    if (search != null && search.isNotEmpty) q['search'] = search;
     final res = await _api.get('${ApiUrls.nhapHangApi}/products',
         query: q, token: _tok);
     final list = res is List
@@ -45,6 +47,12 @@ class ProductService {
     return (list as List)
         .map((e) => Product.fromJson(Map<String, dynamic>.from(e)))
         .toList();
+  }
+
+  Map<String, String>? get _auditHeader {
+    final u = _session.username;
+    if (u == null || u.isEmpty) return null;
+    return {'X-Changed-By': u};
   }
 
   Future<Product> getProduct(String id) async {
@@ -56,7 +64,7 @@ class ProductService {
 
   Future<Product> createProduct(Map<String, dynamic> body) async {
     final res = await _api.post('${ApiUrls.nhapHangApi}/products',
-        body: body, token: _tok);
+        body: body, token: _tok, headers: _auditHeader);
     final data = res is Map && res['data'] != null ? res['data'] : res;
     final p = Product.fromJson(Map<String, dynamic>.from(data));
     NotificationService.instance.showBookingSuccess(
@@ -69,10 +77,14 @@ class ProductService {
 
   Future<void> cancelProduct(String id,
       {String? cancelNote, String? changedBy}) async {
-    await _api.delete('${ApiUrls.nhapHangApi}/products/$id', body: {
-      'cancelNote': cancelNote ?? '',
-      if (changedBy != null) 'changedBy': changedBy,
-    }, token: _tok);
+    final who = changedBy ?? _session.username;
+    await _api.delete('${ApiUrls.nhapHangApi}/products/$id',
+        body: {
+          'cancelNote': cancelNote ?? '',
+          if (who != null) 'changedBy': who,
+        },
+        token: _tok,
+        headers: _auditHeader);
   }
 
   Future<List<Station>> listStations() async {

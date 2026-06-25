@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import 'core/theme.dart';
 import 'core/notification_service.dart';
+import 'core/widgets/offline_banner.dart';
 import 'session.dart';
 import 'features/splash/splash_screen.dart';
 import 'features/home/module_selector_screen.dart';
@@ -50,6 +51,14 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await ModuleSession.initStorage();
   await NotificationService.instance.init();
+  NotificationService.instance.onTap = (payload) {
+    // booking:<id> hoặc product:<id> — đẩy về module liên quan.
+    if (payload.startsWith('booking:')) {
+      _router.go('/tonghop');
+    } else if (payload.startsWith('product:')) {
+      _router.go('/nhaphang');
+    }
+  };
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
@@ -69,6 +78,8 @@ class VoCucPhuongApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       routerConfig: _router,
+      builder: (context, child) =>
+          OfflineBanner(child: child ?? const SizedBox.shrink()),
     );
   }
 }

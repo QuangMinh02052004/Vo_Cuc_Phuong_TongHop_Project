@@ -41,6 +41,10 @@ dependencies:
   # Local notifications (báo khi đặt vé / tạo đơn thành công)
   flutter_local_notifications: ^17.2.3
 
+  # Phase 2+3 UX
+  shimmer: ^3.0.0
+  connectivity_plus: ^6.0.5
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

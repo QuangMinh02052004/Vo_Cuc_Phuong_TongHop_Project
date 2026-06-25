@@ -45,16 +45,21 @@ class ApiClient {
     return e.message ?? 'Lỗi kết nối';
   }
 
-  Options? _opt(String? token) {
-    if (token == null || token.isEmpty) return null;
-    return Options(headers: {'Authorization': 'Bearer $token'});
+  Options? _opt(String? token, [Map<String, String>? extraHeaders]) {
+    final h = <String, String>{};
+    if (token != null && token.isNotEmpty) h['Authorization'] = 'Bearer $token';
+    if (extraHeaders != null) h.addAll(extraHeaders);
+    if (h.isEmpty) return null;
+    return Options(headers: h);
   }
 
   Future<dynamic> get(String url,
-      {Map<String, dynamic>? query, String? token}) async {
+      {Map<String, dynamic>? query,
+      String? token,
+      Map<String, String>? headers}) async {
     try {
-      final r =
-          await _dio.get(url, queryParameters: query, options: _opt(token));
+      final r = await _dio.get(url,
+          queryParameters: query, options: _opt(token, headers));
       return r.data;
     } on DioException catch (e) {
       throw e.error is ApiException
@@ -64,10 +69,13 @@ class ApiClient {
   }
 
   Future<dynamic> post(String url,
-      {dynamic body, Map<String, dynamic>? query, String? token}) async {
+      {dynamic body,
+      Map<String, dynamic>? query,
+      String? token,
+      Map<String, String>? headers}) async {
     try {
       final r = await _dio.post(url,
-          data: body, queryParameters: query, options: _opt(token));
+          data: body, queryParameters: query, options: _opt(token, headers));
       return r.data;
     } on DioException catch (e) {
       throw e.error is ApiException
@@ -76,9 +84,13 @@ class ApiClient {
     }
   }
 
-  Future<dynamic> patch(String url, {dynamic body, String? token}) async {
+  Future<dynamic> patch(String url,
+      {dynamic body,
+      String? token,
+      Map<String, String>? headers}) async {
     try {
-      final r = await _dio.patch(url, data: body, options: _opt(token));
+      final r = await _dio.patch(url,
+          data: body, options: _opt(token, headers));
       return r.data;
     } on DioException catch (e) {
       throw e.error is ApiException
@@ -87,9 +99,13 @@ class ApiClient {
     }
   }
 
-  Future<dynamic> delete(String url, {dynamic body, String? token}) async {
+  Future<dynamic> delete(String url,
+      {dynamic body,
+      String? token,
+      Map<String, String>? headers}) async {
     try {
-      final r = await _dio.delete(url, data: body, options: _opt(token));
+      final r = await _dio.delete(url,
+          data: body, options: _opt(token, headers));
       return r.data;
     } on DioException catch (e) {
       throw e.error is ApiException

@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 final NumberFormat _vnd = NumberFormat.decimalPattern('vi_VN');
@@ -33,4 +34,27 @@ String formatDateTime(DateTime? d) {
 DateTime? tryParseDate(String? s) {
   if (s == null || s.isEmpty) return null;
   return DateTime.tryParse(s);
+}
+
+String formatDateApi(DateTime d) =>
+    '${d.year.toString().padLeft(4, '0')}-'
+    '${d.month.toString().padLeft(2, '0')}-'
+    '${d.day.toString().padLeft(2, '0')}';
+
+/// TextInputFormatter cho ô tiền VND: gõ 1000000 -> hiển thị 1.000.000.
+class VNDInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue, TextEditingValue newValue) {
+    final digits = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.isEmpty) {
+      return const TextEditingValue(text: '');
+    }
+    final n = int.tryParse(digits) ?? 0;
+    final formatted = _vnd.format(n);
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
+    );
+  }
 }
