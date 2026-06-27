@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'core/constants.dart';
 import 'core/theme.dart';
 import 'core/notification_service.dart';
 import 'core/widgets/offline_banner.dart';
@@ -10,9 +11,7 @@ import 'session.dart';
 import 'features/splash/splash_screen.dart';
 import 'features/home/module_selector_screen.dart';
 import 'features/auth/login_screen.dart';
-import 'features/datve/datve_tab.dart';
-import 'features/nhaphang/nhaphang_tab.dart';
-import 'features/tonghop/tonghop_tab.dart';
+import 'features/shell/module_webview_screen.dart';
 
 /// Guard: nếu vào /tonghop hoặc /nhaphang mà module chưa login → đẩy về `/login/<module>`.
 Future<String?> _moduleGuard(String moduleKey) async {
@@ -33,16 +32,34 @@ final _router = GoRouter(
         moduleKey: state.pathParameters['module'] ?? 'tonghop',
       ),
     ),
-    GoRoute(path: '/datve', builder: (_, __) => const DatVeHomeScreen()),
+    GoRoute(
+      path: '/datve',
+      builder: (_, __) => const ModuleWebViewScreen(
+        moduleKey: 'datve',
+        title: 'Đặt Vé Xe Khách',
+        url: ApiUrls.datVeWeb,
+        color: AppColors.primary,
+      ),
+    ),
     GoRoute(
       path: '/nhaphang',
       redirect: (_, __) => _moduleGuard('nhaphang'),
-      builder: (_, __) => const NhapHangHomeScreen(),
+      builder: (_, __) => const ModuleWebViewScreen(
+        moduleKey: 'nhaphang',
+        title: 'Quản Lý Hàng Hóa',
+        url: ApiUrls.nhapHangWeb,
+        color: AppColors.accent,
+      ),
     ),
     GoRoute(
       path: '/tonghop',
       redirect: (_, __) => _moduleGuard('tonghop'),
-      builder: (_, __) => const TongHopHomeScreen(),
+      builder: (_, __) => const ModuleWebViewScreen(
+        moduleKey: 'tonghop',
+        title: 'Quản Lý Xe Khách',
+        url: ApiUrls.tongHopWeb,
+        color: AppColors.orange,
+      ),
     ),
   ],
 );

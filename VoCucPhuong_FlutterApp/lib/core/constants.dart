@@ -9,6 +9,11 @@ class ApiUrls {
   static const String nhapHangApi = '$publicBase/api/nhap-hang';
   static const String tongHopApi = '$publicBase/api/tong-hop';
   static const String datVeApi = '$datVeBase/api';
+
+  // Web app URLs cho WebView mỗi module
+  static const String tongHopWeb = '$publicBase/tong-hop/index.html';
+  static const String nhapHangWeb = '$publicBase/nhap-hang/index.html';
+  static const String datVeWeb = datVeBase;
 }
 
 class AppColors {
