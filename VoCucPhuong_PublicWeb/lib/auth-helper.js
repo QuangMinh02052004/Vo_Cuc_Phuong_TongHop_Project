@@ -1,9 +1,17 @@
 import jwt from 'jsonwebtoken';
 import { NextResponse } from 'next/server';
 
-// Phải khớp với secret dùng khi KÝ token ở login/me route (…-2025),
-// nếu không token admin sẽ verify fail → route dùng requirePerm trả 401.
+// Phải khớp với secret dùng khi KÝ token ở login/me route (…-2025).
 const JWT_SECRET = process.env.JWT_SECRET || 'vocucphuong-secret-key-2025';
+
+// Chấp nhận nhiều secret khi verify để token cũ (ký bằng env secret hoặc key năm
+// trước) vẫn hợp lệ, tránh tái diễn lỗi "verify fail → 401" khi secret bị lệch.
+const JWT_SECRETS = [...new Set([
+  JWT_SECRET,
+  process.env.JWT_SECRET,
+  'vocucphuong-secret-key-2025',
+  'vocucphuong-secret-key-2024',
+].filter(Boolean))];
 
 const ADMIN_PERMS = ['phongve.view','phongve.create','phongve.edit','phongve.cancel','kho.view','kho.edit','thongke.view','logs.view','users.manage'];
 const EMPLOYEE_PERMS = ['phongve.view','phongve.create','phongve.edit','kho.view','kho.edit','thongke.view'];
@@ -14,8 +22,14 @@ export function decodeAuthToken(request) {
     const authHeader = request.headers.get('authorization') || request.headers.get('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) return null;
     const token = authHeader.slice(7);
-    const decoded = jwt.verify(token, JWT_SECRET);
-    return decoded;
+    for (const secret of JWT_SECRETS) {
+      try {
+        return jwt.verify(token, secret);
+      } catch (e) {
+        // thử secret kế tiếp
+      }
+    }
+    return null;
   } catch (e) {
     return null;
   }
