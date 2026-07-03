@@ -1,5 +1,6 @@
 import { queryTongHop, queryOneTongHop } from '../../../../../lib/database';
 import { extractAddressFromName, extractNameOnly } from '../../../../../lib/stations';
+import { getMergedStations } from '../../../../../lib/station-aliases';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -180,8 +181,10 @@ export async function POST(request) {
       }, { status: 400 });
     }
 
-    // === Parse viết tắt từ receiverName ===
-    const matchResult = extractAddressFromName(receiverName);
+    // === Parse viết tắt từ receiverName (dùng aliases admin sửa trong DB) ===
+    let mergedStations = null;
+    try { mergedStations = await getMergedStations(); } catch (e) { console.warn('[Webhook NhapHang] load aliases DB failed, fallback base:', e.message); }
+    const matchResult = extractAddressFromName(receiverName, mergedStations);
     const cleanName = matchResult
       ? extractNameOnly(receiverName, matchResult.matchedText)
       : receiverName;

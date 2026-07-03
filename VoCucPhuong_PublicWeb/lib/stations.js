@@ -124,15 +124,17 @@ function normalizeVietnamese(str) {
  * Tìm địa chỉ trả từ tên người nhận
  * Ví dụ: "minh tco" → { stt: '54', stationName: 'Trà Cổ', matchedText: 'tco' }
  */
-function extractAddressFromName(receiverName) {
+function extractAddressFromName(receiverName, stationsList = stations) {
   if (!receiverName || typeof receiverName !== 'string') {
     return null;
   }
 
   const normalized = normalizeVietnamese(receiverName);
 
-  // Sort by name length (longest first) để match chính xác hơn
-  const sortedStations = [...stations].sort((a, b) => b.name.length - a.name.length);
+  // stationsList mặc định là danh sách gốc; webhook/reconcile truyền vào danh sách đã
+  // merge aliases admin sửa (từ DB StationAliases) để auto-booking dùng đúng viết tắt.
+  const sortedStations = [...(stationsList && stationsList.length ? stationsList : stations)]
+    .sort((a, b) => b.name.length - a.name.length);
 
   // STEP 1: Match full station name
   for (const station of sortedStations) {

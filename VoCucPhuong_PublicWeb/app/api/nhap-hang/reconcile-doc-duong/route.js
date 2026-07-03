@@ -8,6 +8,7 @@
 
 import { queryNhapHang, queryOneNhapHang, queryTongHop, queryOneTongHop } from '../../../../lib/database';
 import { extractAddressFromName, extractNameOnly } from '../../../../lib/stations';
+import { getMergedStations } from '../../../../lib/station-aliases';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -121,7 +122,9 @@ async function findNearestTimeslot(route, currentDate) {
 
 // Retry-on-conflict seat assignment: thử 28 ghế, bất kỳ ghế nào INSERT conflict thì thử ghế khác
 async function createBookingWithSeatRetry(product, timeSlot, route) {
-  const matchResult = extractAddressFromName(product.receiverName);
+  let mergedStations = null;
+  try { mergedStations = await getMergedStations(); } catch (e) { /* fallback base list */ }
+  const matchResult = extractAddressFromName(product.receiverName, mergedStations);
   const cleanName = matchResult
     ? extractNameOnly(product.receiverName, matchResult.matchedText)
     : (product.receiverName || '');

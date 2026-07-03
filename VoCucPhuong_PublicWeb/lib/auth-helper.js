@@ -1,7 +1,9 @@
 import jwt from 'jsonwebtoken';
 import { NextResponse } from 'next/server';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'vocucphuong-secret-key-2024';
+// Phải khớp với secret dùng khi KÝ token ở login/me route (…-2025),
+// nếu không token admin sẽ verify fail → route dùng requirePerm trả 401.
+const JWT_SECRET = process.env.JWT_SECRET || 'vocucphuong-secret-key-2025';
 
 const ADMIN_PERMS = ['phongve.view','phongve.create','phongve.edit','phongve.cancel','kho.view','kho.edit','thongke.view','logs.view','users.manage'];
 const EMPLOYEE_PERMS = ['phongve.view','phongve.create','phongve.edit','kho.view','kho.edit','thongke.view'];
