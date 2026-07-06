@@ -53,7 +53,8 @@ export async function PATCH(request, { params }) {
     const allowedFields = [
       'timeSlotId', 'phone', 'name', 'gender', 'nationality', 'pickupMethod',
       'pickupAddress', 'dropoffMethod', 'dropoffAddress', 'note', 'seatNumber',
-      'amount', 'paid', 'timeSlot', 'date', 'route', 'callStatus', 'printed'
+      'amount', 'paid', 'timeSlot', 'date', 'route', 'callStatus', 'printed',
+      'status', 'roundTripGroupId'
     ];
 
     const updates = [];
@@ -62,7 +63,7 @@ export async function PATCH(request, { params }) {
 
     for (const field of allowedFields) {
       if (body[field] !== undefined) {
-        const dbField = ['timeSlotId', 'pickupMethod', 'pickupAddress', 'dropoffMethod', 'dropoffAddress', 'seatNumber', 'timeSlot', 'callStatus'].includes(field)
+        const dbField = ['timeSlotId', 'pickupMethod', 'pickupAddress', 'dropoffMethod', 'dropoffAddress', 'seatNumber', 'timeSlot', 'callStatus', 'roundTripGroupId'].includes(field)
           ? `"${field}"`
           : field;
         updates.push(`${dbField} = $${paramIndex}`);

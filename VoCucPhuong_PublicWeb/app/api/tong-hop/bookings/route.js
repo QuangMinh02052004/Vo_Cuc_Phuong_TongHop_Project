@@ -3,6 +3,19 @@ import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
+// Lazy migration: cột status (held/paid/active/cancelled) + roundTripGroupId (khứ hồi)
+let _ensuredBookingCols = false;
+async function ensureBookingCols() {
+  if (_ensuredBookingCols) return;
+  try {
+    await queryTongHop(`ALTER TABLE "TH_Bookings" ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'active'`);
+    await queryTongHop(`ALTER TABLE "TH_Bookings" ADD COLUMN IF NOT EXISTS "roundTripGroupId" TEXT`);
+    _ensuredBookingCols = true;
+  } catch (e) {
+    console.warn('[TH Bookings] ensure cols:', e.message);
+  }
+}
+
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -58,25 +71,27 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
+    await ensureBookingCols();
     const body = await request.json();
     const {
       timeSlotId, phone, name, gender, nationality, pickupMethod,
       pickupAddress, dropoffMethod, dropoffAddress, note, seatNumber,
-      amount, paid, timeSlot, date, route
+      amount, paid, timeSlot, date, route, status, roundTripGroupId
     } = body;
 
     const result = await queryTongHop(`
       INSERT INTO "TH_Bookings" (
         "timeSlotId", phone, name, gender, nationality, "pickupMethod",
         "pickupAddress", "dropoffMethod", "dropoffAddress", note, "seatNumber",
-        amount, paid, "timeSlot", date, route
+        amount, paid, "timeSlot", date, route, status, "roundTripGroupId"
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
       RETURNING *
     `, [
       timeSlotId, phone || '', name || '', gender || '', nationality || '',
       pickupMethod || '', pickupAddress || '', dropoffMethod || '', dropoffAddress || '',
-      note || '', seatNumber || 0, amount || 0, paid || 0, timeSlot || '', date || '', route || ''
+      note || '', seatNumber || 0, amount || 0, paid || 0, timeSlot || '', date || '', route || '',
+      status || 'active', roundTripGroupId || null
     ]);
 
     // Best-effort upsert vào TH_Customers (không fail booking nếu lỗi)
