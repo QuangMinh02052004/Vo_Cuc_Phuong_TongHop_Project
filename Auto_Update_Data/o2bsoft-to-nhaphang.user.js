@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         O2BSoft → NhapHang Sync
 // @namespace    vocucphuong.local
-// @version      0.10.0
-// @description  Đồng bộ bảng Kho hàng o2bsoft → NhapHang. Manual + auto 20s + auto-reload trang 60s. v0.10: dùng nguyên mã đơn O2BSoft làm id NhapHang.
+// @version      0.11.0
+// @description  Đồng bộ bảng Kho hàng o2bsoft → NhapHang. Manual + auto 20s + auto-reload trang 60s. v0.11: timer chạy trong Web Worker → sync đều cả khi tab ở nền (không bị trình duyệt bóp nhịp).
 // @match        https://xe.o2bsoft.com/*
 // @match        http://xe.o2bsoft.com/*
 // @grant        GM_xmlhttpRequest
@@ -607,6 +607,7 @@
   // ===== UI =====
   let autoTimer = null;
   let reloadTimer = null;
+  let syncWorker = null; // timer chạy trong Web Worker (không bị bóp nhịp khi tab nền)
 
   // Track lần cuối user gõ phím — chỉ skip reload nếu vừa gõ trong vòng 5s
   let lastInteractAt = 0;
@@ -617,22 +618,41 @@
     return Date.now() - lastInteractAt < 5000;
   }
 
-  function scheduleReload() {
-    if (reloadTimer) clearInterval(reloadTimer);
-    reloadTimer = setInterval(() => {
-      if (userIsBusy()) {
-        console.log('[O2B Sync] Skip reload — user vừa gõ phím <5s');
-        return;
-      }
-      if (isRunning) {
-        console.log('[O2B Sync] Skip reload — sync đang chạy');
-        return;
-      }
-      console.log('[O2B Sync] Auto reload trang...');
-      GM_setValue('reload_pending_sync', Date.now());
-      location.reload();
-    }, AUTO_RELOAD_MS);
-    console.log(`[O2B Sync] Scheduled reload mỗi ${AUTO_RELOAD_MS}ms`);
+  // Reload trang (bỏ qua nếu user vừa gõ hoặc đang sync)
+  function doAutoReload() {
+    if (userIsBusy()) { console.log('[O2B Sync] Skip reload — user vừa gõ phím <5s'); return; }
+    if (isRunning) { console.log('[O2B Sync] Skip reload — sync đang chạy'); return; }
+    console.log('[O2B Sync] Auto reload trang...');
+    GM_setValue('reload_pending_sync', Date.now());
+    location.reload();
+  }
+
+  // Nhịp sync/reload chạy trong Web Worker → KHÔNG bị trình duyệt bóp khi tab ở nền
+  // (setInterval thường bị hạ xuống ~1 lần/phút khi tab ẩn lâu). Tab vẫn phải mở.
+  function startBackgroundTimers() {
+    stopBackgroundTimers();
+    try {
+      const code =
+        'setInterval(function(){postMessage("sync")},' + AUTO_INTERVAL_MS + ');' +
+        'setInterval(function(){postMessage("reload")},' + AUTO_RELOAD_MS + ');';
+      const blob = new Blob([code], { type: 'application/javascript' });
+      syncWorker = new Worker(URL.createObjectURL(blob));
+      syncWorker.onmessage = (e) => {
+        if (e.data === 'sync') { if (!isRunning) runSync({ silent: true }); }
+        else if (e.data === 'reload') { doAutoReload(); }
+      };
+      console.log('[O2B Sync] Timer chạy nền qua Web Worker (không bị bóp nhịp).');
+    } catch (err) {
+      console.warn('[O2B Sync] Worker lỗi, fallback setInterval (có thể bị bóp khi tab nền):', err);
+      autoTimer = setInterval(() => { if (!isRunning) runSync({ silent: true }); }, AUTO_INTERVAL_MS);
+      reloadTimer = setInterval(doAutoReload, AUTO_RELOAD_MS);
+    }
+  }
+
+  function stopBackgroundTimers() {
+    if (autoTimer) { clearInterval(autoTimer); autoTimer = null; }
+    if (reloadTimer) { clearInterval(reloadTimer); reloadTimer = null; }
+    if (syncWorker) { try { syncWorker.terminate(); } catch (e) {} syncWorker = null; }
   }
 
   function setBadge(t) {
@@ -645,7 +665,7 @@
     if (!el) return;
     const isAuto = GM_getValue('auto_sync', false);
     const last = stats.lastAt ? `${stats.lastAt.toLocaleTimeString('vi-VN')}` : '—';
-    const mode = isAuto ? `🟢 Auto (sync 20s, reload 60s)` : '⚪ Manual';
+    const mode = isAuto ? `🟢 Auto nền (sync 20s, reload 60s)` : '⚪ Manual';
     let txt = `${mode} | last: ${last} | +${stats.created} ~${stats.updated} ✗${stats.failed}`;
     if (lastError) txt += `\n❌ ${lastError.slice(0, 80)}`;
     el.textContent = txt;
@@ -655,12 +675,10 @@
 
   function setAuto(on) {
     GM_setValue('auto_sync', !!on);
-    if (autoTimer) { clearInterval(autoTimer); autoTimer = null; }
-    if (reloadTimer) { clearInterval(reloadTimer); reloadTimer = null; }
+    stopBackgroundTimers();
     if (on) {
       runSync({ silent: true });
-      autoTimer = setInterval(() => runSync({ silent: true }), AUTO_INTERVAL_MS);
-      scheduleReload();
+      startBackgroundTimers();
     }
     renderBadge();
   }
