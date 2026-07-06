@@ -126,16 +126,16 @@ export async function PUT(request, { params }) {
       }, { status: 404 });
     }
 
-    // Kiểm tra thời gian cho phép sửa (2 phút kể từ sendDate)
+    // Quá 2 phút kể từ sendDate: CHỈ khoá GIÁ TIỀN (totalAmount) — các thông tin khác vẫn cho sửa.
+    let priceLocked = false;
     if (existing.sendDate) {
       const created = new Date(existing.sendDate);
       const elapsed = Date.now() - created.getTime();
       if (elapsed > 2 * 60 * 1000) {
-        return NextResponse.json({
-          success: false,
-          code: 'EDIT_TIME_EXPIRED',
-          error: 'Đã quá 2 phút! Không thể chỉnh sửa đơn hàng.'
-        }, { status: 403 });
+        if (body.totalAmount !== undefined && String(body.totalAmount) !== String(existing.totalAmount)) {
+          priceLocked = true;
+          body.totalAmount = existing.totalAmount; // giữ nguyên giá, bỏ qua thay đổi giá
+        }
       }
     }
 
@@ -172,6 +172,15 @@ export async function PUT(request, { params }) {
     }
 
     if (updates.length === 0) {
+      // Nếu chỉ định sửa giá nhưng đã quá 2 phút → coi như thành công, giá giữ nguyên
+      if (priceLocked) {
+        return NextResponse.json({
+          success: true,
+          priceLocked: true,
+          message: 'Đã quá 2 phút — không sửa được giá tiền. Các thông tin khác không thay đổi.',
+          product: existing
+        });
+      }
       return NextResponse.json({
         success: false,
         error: 'Không có dữ liệu để cập nhật',

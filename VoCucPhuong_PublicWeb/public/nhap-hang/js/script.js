@@ -1318,11 +1318,7 @@ function enableInlineEdit(row, event) {
     const product = products.find(p => p.id === productId);
     if (!product) return;
 
-    // Kiểm tra thời gian cho phép sửa
-    if (!isEditable(product)) {
-        showNotification('Không thể sửa.', 'error');
-        return;
-    }
+    // Sau 2 phút vẫn cho sửa mọi thông tin, CHỈ khoá riêng ô giá tiền (xử lý trong vòng lặp bên dưới)
 
     // If already editing another row, save it first
     if (currentEditingRow && currentEditingRow !== row) {
@@ -1343,6 +1339,14 @@ function enableInlineEdit(row, event) {
     const editableCells = row.querySelectorAll('.editable');
     editableCells.forEach(cell => {
         const field = cell.dataset.field;
+
+        // Quá 2 phút: khoá riêng ô GIÁ TIỀN (giữ read-only), các ô khác vẫn sửa bình thường
+        if (field === 'totalAmount' && !isEditable(product)) {
+            cell.title = 'Đã quá 2 phút — không sửa được giá tiền';
+            cell.style.opacity = '0.55';
+            return;
+        }
+
         let value = product[field] || '';
 
         // Remove formatting for totalAmount
