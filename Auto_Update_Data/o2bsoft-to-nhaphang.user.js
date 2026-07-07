@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         O2BSoft → NhapHang Sync
 // @namespace    vocucphuong.local
-// @version      0.11.0
-// @description  Đồng bộ bảng Kho hàng o2bsoft → NhapHang. Manual + auto 20s + auto-reload trang 60s. v0.11: timer chạy trong Web Worker → sync đều cả khi tab ở nền (không bị trình duyệt bóp nhịp).
+// @version      0.12.0
+// @description  Đồng bộ bảng Kho hàng o2bsoft → NhapHang. AUTO mặc định BẬT: tự sync 20s + tự reload trang 60s + tự đăng nhập lại. Timer chạy trong Web Worker (chạy đều cả khi tab ở nền).
 // @match        https://xe.o2bsoft.com/*
 // @match        http://xe.o2bsoft.com/*
 // @grant        GM_xmlhttpRequest
@@ -10,6 +10,8 @@
 // @grant        GM_getValue
 // @connect      vocucphuongmanage.vercel.app
 // @run-at       document-idle
+// @downloadURL  https://raw.githubusercontent.com/QuangMinh02052004/Vo_Cuc_Phuong_TongHop_Project/main/Auto_Update_Data/o2bsoft-to-nhaphang.user.js
+// @updateURL    https://raw.githubusercontent.com/QuangMinh02052004/Vo_Cuc_Phuong_TongHop_Project/main/Auto_Update_Data/o2bsoft-to-nhaphang.user.js
 // ==/UserScript==
 
 (function () {
@@ -663,7 +665,7 @@
   function renderBadge() {
     const el = document.getElementById('vcp-sync-badge');
     if (!el) return;
-    const isAuto = GM_getValue('auto_sync', false);
+    const isAuto = GM_getValue('auto_sync', true);
     const last = stats.lastAt ? `${stats.lastAt.toLocaleTimeString('vi-VN')}` : '—';
     const mode = isAuto ? `🟢 Auto nền (sync 20s, reload 60s)` : '⚪ Manual';
     let txt = `${mode} | last: ${last} | +${stats.created} ~${stats.updated} ✗${stats.failed}`;
@@ -718,7 +720,7 @@
     const btnRow = document.createElement('div');
     btnRow.style.cssText = `display: flex !important; gap: 8px !important; pointer-events: auto !important;`;
 
-    const initAuto = GM_getValue('auto_sync', false);
+    const initAuto = GM_getValue('auto_sync', true);
     const autoBtn = document.createElement('button');
     autoBtn.type = 'button';
     autoBtn.textContent = initAuto ? '⏸ TẮT AUTO' : '▶ BẬT AUTO';
@@ -738,7 +740,7 @@
     `;
     autoBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      const next = !GM_getValue('auto_sync', false);
+      const next = !GM_getValue('auto_sync', true);
       setAuto(next);
       autoBtn.textContent = next ? '⏸ TẮT AUTO' : '▶ BẬT AUTO';
       autoBtn.style.setProperty('background', next ? '#b91c1c' : '#2563eb', 'important');
