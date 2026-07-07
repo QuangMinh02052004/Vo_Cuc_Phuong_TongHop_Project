@@ -1,6 +1,13 @@
 .DS_Store
 .claude/
 node_modules/
+.env
 .env.local
 .env*.local
 *.log
+
+# Báo cáo + hình ảnh không đưa lên GitHub (giữ bản trên máy)
+BaoCao/
+image.png
+*.docx
+~$*
