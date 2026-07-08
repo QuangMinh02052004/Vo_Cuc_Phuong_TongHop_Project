@@ -1,6 +1,0 @@
-.DS_Store
-.claude/
-node_modules/
-.env.local
-.env*.local
-*.log
