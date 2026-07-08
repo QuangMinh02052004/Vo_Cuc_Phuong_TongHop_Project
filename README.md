@@ -22,19 +22,12 @@ Vo_Cuc_Phuong/
 ├── VoCucPhuong_FlutterApp/        ← Flutter app NỘI BỘ (có login + 3 tab: Đặt Vé / Nhập Hàng / Tổng Hợp)
 │
 ├── VoCucPhuong_PageOptions/       ← Landing page giới thiệu công ty (tĩnh)
-│
 ├── VoCucPhuong_BackupData/        ← Snapshot SQL dump của 3 DB Neon (file .sql backup định kỳ)
-│
-├── Auto_Update_Data/              ← Tool tự động đồng bộ dữ liệu từ hệ thống ngoài
-│   └── o2bsoft-to-nhaphang.user.js  Tampermonkey scrape O2BSoft → POST sang NhapHang API
-│
-├── infrastructure/                ← Cấu hình self-host (Docker + nginx). Hiện không dùng vì đã deploy Vercel.
-│                                    Giữ phòng khi cần chạy local hoặc chuyển sang VPS riêng.
 │
 ├── .env / .env.example            ← Biến môi trường (KHÔNG commit .env thật)
 ├── .gitignore
-├── .github/                       ← CI workflows
-└── .claude/                       ← Cấu hình Claude Code
+├── .vscode/                       ← Cấu hình VS Code
+└── CLAUDE.md                      ← Hướng dẫn làm việc với AI assistant
 ```
 
 ## 3 cơ sở dữ liệu Neon PostgreSQL
