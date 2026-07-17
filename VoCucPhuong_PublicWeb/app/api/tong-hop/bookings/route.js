@@ -10,6 +10,7 @@ async function ensureBookingCols() {
   try {
     await queryTongHop(`ALTER TABLE "TH_Bookings" ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'active'`);
     await queryTongHop(`ALTER TABLE "TH_Bookings" ADD COLUMN IF NOT EXISTS "roundTripGroupId" TEXT`);
+    await queryTongHop(`ALTER TABLE "TH_Bookings" ADD COLUMN IF NOT EXISTS "createdBy" TEXT`);
     _ensuredBookingCols = true;
   } catch (e) {
     console.warn('[TH Bookings] ensure cols:', e.message);
@@ -76,22 +77,22 @@ export async function POST(request) {
     const {
       timeSlotId, phone, name, gender, nationality, pickupMethod,
       pickupAddress, dropoffMethod, dropoffAddress, note, seatNumber,
-      amount, paid, timeSlot, date, route, status, roundTripGroupId
+      amount, paid, timeSlot, date, route, status, roundTripGroupId, createdBy
     } = body;
 
     const result = await queryTongHop(`
       INSERT INTO "TH_Bookings" (
         "timeSlotId", phone, name, gender, nationality, "pickupMethod",
         "pickupAddress", "dropoffMethod", "dropoffAddress", note, "seatNumber",
-        amount, paid, "timeSlot", date, route, status, "roundTripGroupId"
+        amount, paid, "timeSlot", date, route, status, "roundTripGroupId", "createdBy"
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
       RETURNING *
     `, [
       timeSlotId, phone || '', name || '', gender || '', nationality || '',
       pickupMethod || '', pickupAddress || '', dropoffMethod || '', dropoffAddress || '',
       note || '', seatNumber || 0, amount || 0, paid || 0, timeSlot || '', date || '', route || '',
-      status || 'active', roundTripGroupId || null
+      status || 'active', roundTripGroupId || null, createdBy || null
     ]);
 
     // Best-effort upsert vào TH_Customers (không fail booking nếu lỗi)
